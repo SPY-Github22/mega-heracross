@@ -1,0 +1,219 @@
+**NEUROGRID — PART C: 25‑Phase Exploration Roadmap**  
+*Resilience & Visualization Engine | ISRO Bharatiya Antariksh Hackathon 2026*
+
+I have read and internalized both contract files (`shared/schema.py`, `shared/config.py`). The constants `TARGET_CRS`, `COLLAPSE_THRESHOLD`, test bbox, output paths, and the inter‑part data contracts are locked. Below is the full roadmap that will take us from an empty folder to a state‑of‑the‑art resilience engine that can win over ISRO/NRSC judges.
+
+---
+
+### **Phase 1 – Scaffolding & Contract Awareness**
+**What:** Create `part_c_resilience/` folder structure, a `requirements.txt`, and a minimal `main.py` that loads the shared schema/config, validates the environment, and prints “Part C ready”.  
+**Why:** Establishes the sandbox and ensures all imports work before any logic is written. Sets the foundation for all later phases.  
+**Evaluation coverage:** No.
+
+---
+
+### **Phase 2 – Graph Loading & Contract Validation (Input Side)**
+**What:** Implement `load_graph()` that reads `graph.json`, validates every field against `RoadGraph` schema using `dataclasses`/`pydantic`, reconstructs a `networkx.Graph` with full `lat/lon` node attributes and `weight_m` edge attributes. Fails loudly with a precise error if validation fails.  
+**Why:** Contract validation is mandatory. This phase guarantees that no invalid data ever enters the engine. Judges prize robust engineering.  
+**Evaluation coverage:** ✔ *Contract validation* (schemas enforced).
+
+---
+
+### **Phase 3 – OSMnx Fallback Engine**
+**What:** Check `GRAPH_SOURCE` from config. If it’s `"osmnx"` or `graph.json` is missing, download the Koramangala road network automatically via `osmnx.graph_from_bbox()` using `TEST_TILE_BBOX`. Serialise it into our `RoadGraph` schema and proceed.  
+**Why:** Decouples Part C from Parts A & B, allowing independent development, testing, and demo. Shows judges we can handle real‑world data gracefully.  
+**Evaluation coverage:** ✔ *Contract validation* applied to fallback data.
+
+---
+
+### **Phase 4 – Edge Betweenness Centrality (Brandes)**
+**What:** Compute edge betweenness centrality using `networkx.edge_betweenness_centrality(weight='weight_m')`. Derive **node criticality** as the maximum (or sum of) betweenness of incident edges. Print top‑10 choke points.  
+**Why:** This is the core criticality metric requested in the problem statement. Edge‑level centrality directly maps to road segments.  
+**Evaluation coverage:** No (metric computation exists but not yet reported).
+
+---
+
+### **Phase 5 – Resilience Index Baseline & Delay Penalty**
+**What:** Define **Resilience Index** as global network efficiency: `E = 1/(N(N-1)) * Σ 1/d(i,j)`. Compute the baseline on the full graph. Define travel delay penalty as `(1/E_current - 1/E_baseline) / (1/E_baseline)`.  
+**Why:** These physics‑inspired metrics quantify how hard it becomes to travel when the network degrades. They are exactly what ISRO wants for “Urban Collapse”.  
+**Evaluation coverage:** No.
+
+---
+
+### **Phase 6 – Deterministic Node Ablation & Collapse Detection**
+**What:** Sort nodes by descending criticality. Iteratively remove one node, recompute Resilience Index, and stop exactly when delay penalty exceeds `COLLAPSE_THRESHOLD` (50%). Output the number of nodes removed at collapse and the corresponding Resilience Index.  
+**Why:** Demonstrates the weakest‑link analysis. Shows judges we know exactly when the network fails, not just abstract scores.  
+**Evaluation coverage:** ✔ *Quantitative metrics* (collapse point, resilience at collapse).
+
+---
+
+### **Phase 7 – Monte Carlo Chaos Simulation (100 Scenarios, 5‑Node Severance)**
+**What:** In each of 100 trials, randomly remove 5 nodes without regard to criticality. Compute **survival rate** (fraction of node pairs that still have a path) and **average delay penalty** for surviving pairs. Aggregate and compute 95% confidence intervals (using normal approx or bootstrap).  
+**Why:** Stress‑tests the network against random, realistic failures (road closures, floods, protests). The contract explicitly mandates this.  
+**Evaluation coverage:** ✔ *Quantitative metrics* (survival rate, confidence interval, mean delay penalty).
+
+---
+
+### **Phase 8 – Judge‑Ready Score Report (Evaluation Layer Finalised)**
+**What:** After every run, print a single, clean summary block exactly in the required format: `“Koramangala network: X nodes, Y edges. Top choke point: node Z (centrality C). Collapse at N-node removal. Monte Carlo survival rate: S% ± CI. Mean delay penalty: P%”`  
+Also export all quantitative metrics to a `evaluation.json` that can be read by `shared/eval.py` later.  
+**Why:** This is the direct deliverable for the evaluation layer. Judges will see a concise, data‑rich statement that answers the problem statement immediately.  
+**Evaluation coverage:** ✔ *Full evaluation coverage achieved* (contract validation, metrics, report).
+
+---
+
+### **Phase 9 – Static Folium Heatmap (Dark Basemap, Colour‑Coded Roads)**
+**What:** Generate `disaster_heatmap.html` using Folium with a dark CartoDB basemap. Add every graph edge as a `PolyLine` coloured by a continuous colour scale (e.g., yellow to red) based on edge betweenness centrality. Include a gradient legend.  
+**Why:** The heatmap is the “face of the project”. This baseline version delivers the minimum viable visual.  
+**Evaluation coverage:** No (visual delivery only).
+
+---
+
+### **Phase 10 – Markers, Choke Points & Collapse Overlay**
+**What:** Add Folium `CircleMarker`s for the top 10 critical nodes, labelled with ID and centrality score. Add an overlay layer that, toggled by a button, visualises the collapse scenario (removed nodes as red X, affected edges as dashed lines).  
+**Why:** Gives the non‑technical judge an immediate, story‑driven understanding of where failure hurts the most.  
+**Evaluation coverage:** No.
+
+---
+
+### **Phase 11 – Streamlit Interactive Dashboard (Basic)**
+**What:** Wrap the engine in a Streamlit app (`app.py`). Sidebar shows key metrics. Main pane embeds the Folium map. User can switch between “Baseline”, “Ablation Step”, and “Monte Carlo Result” views.  
+**Why:** Interactivity elevates the demo from static report to an exploratory tool — perfect for a hackathon finale.  
+**Evaluation coverage:** No (but enhances the “judge‑ready score report” by making it live).
+
+---
+
+### **Phase 12 – Algorithmic Refinements & Metric Normalisation**
+**What:** Refine node criticality to be the sum of adjacent edge betweenness (normalised 0–1). Normalise resilience index so that it is 1.0 at baseline. Present delay penalty as a clean percentage. Ensure arithmetic matches network theory textbooks.  
+**Why:** Judges with deep ML/GIS backgrounds will notice sloppy metrics. This phase makes the numbers bulletproof and ready for publication.  
+**Evaluation coverage:** No (but fortifies metric accuracy).
+
+---
+
+### **Phase 13 – Real‑Time Ablation Slider in Streamlit**
+**What:** Add a slider to the dashboard that removes nodes one by one in criticality order, updating the map and a line chart of Resilience Index vs removals in real time. The collapse threshold is shown as a red dashed line.  
+**Why:** Transforms the ablation from a static number into a compelling visual narrative of “This many failures, and the city stops.”  
+**Evaluation coverage:** No.
+
+---
+
+### **Phase 14 – Monte Carlo Results Visualisation**
+**What:** Integrate survival rate bar chart and delay penalty histogram (with confidence interval shading) into the Streamlit dashboard using Plotly. Show the distribution of delays across scenarios.  
+**Why:** Statistical rigour is visible only when distributions are shown. ISRO loves uncertainty quantification.  
+**Evaluation coverage:** ✔ Indirectly supports the quantitative metrics presentation.
+
+---
+
+### **Phase 15 – Performance Optimisation**
+**What:** Cache graph loading and centrality computation using `st.cache` or `functools.lru_cache`. Use `joblib` to parallelise the 100 Monte Carlo scenarios. Ensure the dashboard responds within 3 seconds for the Koramangala‑sized network.  
+**Why:** A slow demo loses judges. This phase proves we can scale to city‑level graphs.  
+**Evaluation coverage:** No.
+
+---
+
+### **Phase 16 – Robustness & Large Graph Readiness**
+**What:** Add memory profiling, chunked processing for graphs >10,000 edges, and graceful degradation if OSMnx download is slow. Log all steps.  
+**Why:** Shows production‑grade engineering. Critical if the hackathon tests with larger tiles unexpectedly.  
+**Evaluation coverage:** No.
+
+---
+
+### **Phase 17 – Unit Tests for Metrics & Ablation Logic**
+**What:** Write `pytest` tests (inside `tests/`) that validate the resilience index formula on a 5‑node toy graph, the collapse detection threshold, and that contract validation rejects malformed `graph.json` correctly.  
+**Why:** Judges from ISRO will respect a rigorously tested codebase. This phase ensures the numbered metrics are reproducible.  
+**Evaluation coverage:** ✔ Strengthens contract validation and metric reliability.
+
+---
+
+### **Phase 18 – Integration Test with Synthetic Pipeline Data**
+**What:** Create synthetic `road_mask.npy` and `meta.json` (as if from Part A) and run them through a tiny Part B simulator to produce a valid `graph.json`. Then run Part C end‑to‑end and compare with expected outputs.  
+**Why:** Proves that the contract between parts is watertight — essential for team integration.  
+**Evaluation coverage:** ✔ Validates the entire chain.
+
+---
+
+### **Phase 19 – Brandes Algorithm from Scratch (Academic Depth)**
+**What:** Implement Brandes’ algorithm for edge betweenness centrality in pure Python/NumPy, optimized for our sparse weighted graph. Benchmark against NetworkX to guarantee correctness.  
+**Why:** This is a “wow factor” for judges who appreciate algorithmic rigour. It demonstrates that we understand the mathematics, not just the library call.  
+**Evaluation coverage:** No (but elevates the technical depth of the project).
+
+---
+
+### **Phase 20 – Advanced Monte Carlo: Correlated & Cascading Failures**
+**What:** Model spatially correlated failures (nodes near each other more likely to fail together). After initial severance, simulate cascading overload by recomputing criticality and removing the next most stressed node, until the network fragments. Report cascade length and acceleration factor.  
+**Why:** Real infrastructure fails in cascades. This is cutting‑edge resilience analysis, directly answering “what happens when they fail” from the problem statement.  
+**Evaluation coverage:** ✔ Adds richer metrics (cascade length, collapse acceleration).
+
+---
+
+### **Phase 21 – Sensitivity Analysis Engine**
+**What:** Extend the dashboard with a “Sensitivity” tab that lets the judge sweep: number of simultaneously severed nodes (1–10), collapse threshold (30%–70%), and Monte Carlo sample size. Generate a parameter‑impact report.  
+**Why:** Shows that our conclusions are robust, not cherry‑picked. Judges love multi‑dimensional analysis.  
+**Evaluation coverage:** No (but enriches the overall evaluation report).
+
+---
+
+### **Phase 22 – Polished PDF/HTML Report Generator**
+**What:** Add an “Export Report” button in Streamlit that generates a self‑contained HTML or PDF with all metrics, the heatmap screenshot, and executive summary text.  
+**Why:** ISRO decision‑makers often need offline documentation. This makes the project ready for the chief’s desk.  
+**Evaluation coverage:** No.
+
+---
+
+### **Phase 23 – Configuration‑Driven, City‑Agnostic Architecture**
+**What:** Move all parameters (BBOX, thresholds, number of Monte Carlo runs, colour scales) into a `config.yaml`. The engine can now analyse any city by changing the YAML (and supplying the appropriate graph files).  
+**Why:** Shows generalisability — a key criteria in hackathons. The same codebase can be reused for Hyderabad, Mumbai, etc.  
+**Evaluation coverage:** No.
+
+---
+
+### **Phase 24 – Final UI Polish & Storytelling**
+**What:** Refine the Streamlit theme to a dark “ISRO mission” style (greys, oranges, crisp fonts). Add a guided narrative (“Explore -> Understand -> Act”) with annotations. Ensure the heatmap is responsive on a projector screen.  
+**Why:** The dashboard is what judges will remember. This phase is pure persuasion engineering.  
+**Evaluation coverage:** No.
+
+---
+
+### **Phase 25 – Containerisation & One‑Click Demo**
+**What:** Write a `Dockerfile` and `docker-compose` that spins up the entire Streamlit app on port 8501 with all dependencies. Provide a `demo.sh` that runs the engine headless and outputs the judge score report + heatmap.  
+**Why:** Makes the project trivially runnable by the organising committee, eliminating “works on my machine” risk. Essential for winning.  
+**Evaluation coverage:** No (but ensures all prior evaluation artifacts are easily reproducible).
+
+---
+
+**Roadmap Summary Table (Evaluation Coverage Highlighted)**  
+
+| Phase | Title                                          | Eval Coverage |
+|-------|------------------------------------------------|---------------|
+| 1     | Scaffolding                                    | No            |
+| 2     | Graph Loading & Contract Validation            | ✔ (schema)    |
+| 3     | OSMnx Fallback                                 | ✔ (schema)    |
+| 4     | Edge Betweenness Centrality                    | No            |
+| 5     | Resilience Index & Delay Penalty               | No            |
+| 6     | Deterministic Ablation & Collapse Detection    | ✔ (metrics)   |
+| 7     | Monte Carlo Chaos Simulation                   | ✔ (metrics)   |
+| 8     | Judge‑Ready Score Report                       | ✔ **Full**    |
+| 9     | Static Folium Heatmap                          | No            |
+| 10    | Markers & Collapse Overlay                     | No            |
+| 11    | Streamlit Basic Dashboard                      | No            |
+| 12    | Metric Refinements                             | (strengthens) |
+| 13    | Real‑Time Ablation Slider                      | No            |
+| 14    | Monte Carlo Visualisations                     | (supports)    |
+| 15    | Performance Optimisation                       | No            |
+| 16    | Robustness & Large Graphs                      | No            |
+| 17    | Unit Tests                                     | ✔ (validates) |
+| 18    | Integration Tests                              | ✔ (contract)  |
+| 19    | Custom Brandes Implementation                  | (depth)       |
+| 20    | Correlated & Cascading Failures                | ✔ (new metrics)|
+| 21    | Sensitivity Analysis                           | No            |
+| 22    | PDF Report Generator                           | No            |
+| 23    | City‑Agnostic Config                           | No            |
+| 24    | Final UI Polish                                | No            |
+| 25    | Containerisation & Demo                        | No            |
+
+---
+
+**What would an ISRO judge find impressive/weak at each milestone?**  
+*I will provide that honesty for every phase when we execute it.*  
+
+Please approve this roadmap and we will begin Phase 1 immediately.
