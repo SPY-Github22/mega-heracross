@@ -1,0 +1,29 @@
+Phase I: Occlusion-Robust Segmentation (The Foundation)
+Data Preprocessing
+Tile images, normalize/enhance contrast, simulate occlusions, and balance dataset with occluded roads.
+Baseline Model Development
+Train a U-Net/DeepLabV3+ model, evaluate on occluded regions, and identify failure cases.
+Advanced Model Design
+Implement context-aware architectures (Transformer, attention), focusing on long-range dependencies.
+Loss Function Engineering
+Use combined Dice, IoU, and boundary-aware losses, with optional connectivity loss.
+Occlusion Handling Strategy
+Use context-based inference and multi-scale feature fusion, with optional inpainting.
+Phase II: Graph Skeletonization & Healing
+Thinning
+Apply morphological skeletonization to reduce binary masks into 1-pixel wide centerlines. Nodes are generated at intersections and line endpoints, while road segments are represented as edges.
+Topological Healing
+Use a Minimum Spanning Tree (MST) and Disjoint Set algorithm to bridge gaps caused by extreme occlusions. The algorithm evaluates logical gaps based on Euclidean distance and angular alignment to ensure the "healed" road follows a natural trajectory.
+Phase III: Network Analysis & Stress Testing
+Centrality Calculation
+Apply Betweenness Centrality to identify nodes that lie on the shortest paths across the city. A high centrality score indicates a critical bottleneck.
+Node Ablation Simulation
+Once the critical nodes are identified, the system performs a series of "Network Stress Tests" to quantify vulnerability. The algorithm systematically "removes" nodes with the highest Betweenness Centrality scores from the graph to simulate real-world closures (e.g., severe flooding or structural failure).
+Resilience Index Calculation
+The system recalculates the global network efficiency after each removal. The Resilience Index is defined as the ratio of the average shortest path length in the baseline network to that in the perturbed network. A lower R indicates a highly vulnerable network.
+Phase IV (Advanced): Interactive Dashboard
+The final stage is the development of a web-based visualisation tool (using Streamlit and Leaflet.js) to make the graph data actionable for non-technical planners:
+Heatmap Overlay
+A dynamic map layer that colors road segments based on their "Criticality Worth," allowing planners to see the city's "weakest links" at a glance.
+Simulation Toggle
+An interactive feature where a user can manually click a node to "disable" it. The dashboard instantly updates to show the rerouted paths and the estimated increase in travel time across the affected sector.

@@ -1,8 +1,0 @@
-The "Global South" Complexity: Most foundational computer vision models are trained on Western datasets (like SpaceNet or DeepGlobe), where roads are neatly paved, structured in grids, and clearly marked. In Indian metropolises, roads are often irregular, unpaved, lack lane markings, and suffer from heavy occlusion by dense, low-hanging trees (e.g., Bengaluru's canopy) or building shadows.
-The 2D vs. 3D Ambiguity: Satellites see the world top-down. When an AI extracts a flyover crossing over a surface street, the resulting 2D mask looks like a 4-way intersection. When vectorized, the graph creates a node connecting the two roads, implying cars can turn from the bridge onto the street below. This creates illegal topological connections that corrupt traffic simulations.
-The Connectivity vs. Precision Trade-off: If you tune an algorithm to aggressively hallucinate and bridge gaps (prioritizing connectivity), it will mistakenly connect parallel roads or driveways to main arteries. If you tune it to be precise, it leaves the network disconnected. Balancing this "topological loss" is a massive mathematical hurdle.
-
-the criticality analysis should be dynamic, not static. Road criticality under monsoon flooding, under peak-hour demand, and under a disaster scenario are three different graphs. A temporal criticality framework that conditions the graph weights on seasonal and event data is missing from the literature.
-
-Constraints:
-Distance,Time,Cost,Peak hours,Effort,Maintenance,Weather
