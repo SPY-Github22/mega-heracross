@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  neurogrid-dashboard:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./part_c_resilience/outputs:/app/part_c_resilience/outputs
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
