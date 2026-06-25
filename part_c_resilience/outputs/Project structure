@@ -1,0 +1,32 @@
+neurogrid-partc/
+├── shared/
+│   ├── __init__.py
+│   ├── schema.py
+│   └── config.py
+├── part_c_resilience/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── utils.py
+│   ├── graph_loader.py
+│   ├── resilience.py
+│   ├── viz.py
+│   ├── app.py
+│   ├── pipeline.py
+│   ├── brandes.py
+│   ├── config.yaml
+│   ├── requirements.txt
+│   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── conftest.py
+│   │   ├── test_metrics.py
+│   │   ├── test_integration.py
+│   │   ├── test_brandes.py
+│   │   └── data/
+│   │       └── sample_graph.json
+│   └── outputs/   (empty, created at runtime)
+├── Dockerfile
+├── docker-compose.yml
+├── demo.sh
+├── headless_entrypoint.sh
+├── .dockerignore
+└── README.md
