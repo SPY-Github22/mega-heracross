@@ -17,7 +17,7 @@ OUTPUT
 
 PHASE TRACKER (update as phases complete)
     Phase 01 ✓  Repo scaffold & contract wiring
-    Phase 02    Contract validation in shared/eval.py
+    Phase 02 ✓  Contract validation in shared/eval.py
     Phase 03    Synthetic mask loader + geo-transform
     ...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -39,6 +39,7 @@ if _REPO_ROOT not in sys.path:
 
 # ── Contract imports ─────────────────────────────────────────────────────────
 from shared.schema import RoadMaskMeta, GraphNode, GraphEdge, RoadGraph
+from shared.eval import validate_graph_contract, print_contract_result
 from shared.config import (
     TARGET_CRS,
     COLLAPSE_THRESHOLD,
@@ -237,6 +238,14 @@ def main():
     print_phase01_report(
         path_results, const_violations, schema_violations, output_dir, elapsed_ms
     )
+
+    # ── Phase 02: contract validation ─────────────────────────────────────────
+    # Runs on every execution. If graph.json doesn't exist yet, reports
+    # FILE_NOT_FOUND (expected at this stage). Once Phase 05 emits graph.json,
+    # this will validate it automatically on every subsequent run.
+    graph_json_path = os.path.join(_REPO_ROOT, GRAPH_PATH)
+    contract_result = validate_graph_contract(graph_json_path)
+    print_contract_result(contract_result)
 
     # Exit with non-zero status if any violation found
     # so CI/CD pipelines can catch scaffold failures
