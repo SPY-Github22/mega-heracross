@@ -18,7 +18,7 @@ OUTPUT
 PHASE TRACKER (update as phases complete)
     Phase 01 ✓  Repo scaffold & contract wiring
     Phase 02 ✓  Contract validation in shared/eval.py
-    Phase 03    Synthetic mask loader + geo-transform
+    Phase 03 ✓  Synthetic mask loader + geo-transform
     ...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
@@ -40,6 +40,7 @@ if _REPO_ROOT not in sys.path:
 # ── Contract imports ─────────────────────────────────────────────────────────
 from shared.schema import RoadMaskMeta, GraphNode, GraphEdge, RoadGraph
 from shared.eval import validate_graph_contract, print_contract_result
+from part_b_skeleton.loader import load_inputs, print_loader_report
 from shared.config import (
     TARGET_CRS,
     COLLAPSE_THRESHOLD,
@@ -247,10 +248,19 @@ def main():
     contract_result = validate_graph_contract(graph_json_path)
     print_contract_result(contract_result)
 
+    # ── Phase 03: mask loader + geo-transform ──────────────────────────────────
+    mask_path = os.path.join(_REPO_ROOT, ROAD_MASK_PATH)
+    meta_path = os.path.join(_REPO_ROOT, META_PATH)
+    mask, meta, affine = load_inputs(
+        mask_path, meta_path, use_synthetic_fallback=True
+    )
+    loader_metrics = print_loader_report(mask, meta, affine)
+
     # Exit with non-zero status if any violation found
     # so CI/CD pipelines can catch scaffold failures
     n_violations = len(const_violations) + len(schema_violations)
-    sys.exit(0 if n_violations == 0 else 1)
+    loader_ok = loader_metrics.get("loader_pass", True)
+    sys.exit(0 if (n_violations == 0 and loader_ok) else 1)
 
 
 if __name__ == "__main__":
