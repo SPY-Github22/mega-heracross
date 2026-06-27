@@ -28,6 +28,9 @@ PHASE TRACKER (update as phases complete)
     Phase 10 ✓  KD-Tree break detection
     Phase 11 ✓  Union-Find component tracking
     Phase 12 ✓  MST-guided gap bridging
+    Phase 13 ✓  Spurious branch pruning
+    Phase 14 ✓  Intersection simplification (degree-2 collapse)
+    Phase 15 ✓  Healing quality validation + LCC gate
     ...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
@@ -51,12 +54,14 @@ from shared.schema import RoadMaskMeta, GraphNode, GraphEdge, RoadGraph
 from shared.eval import (validate_graph_contract, print_contract_result,
                          graph_topology_f1, print_topology_f1_result,
                          connectivity_report, print_connectivity_report,
-                         print_judge_report)
+                         print_judge_report, healing_validation,
+                         print_healing_validation)
 from part_b_skeleton.loader import load_inputs, print_loader_report
 from part_b_skeleton.skeletonize import run_skeletonization
 from part_b_skeleton.graph_builder import build_and_save_graph
 from part_b_skeleton.osm_reference import load_or_download_osm
 from part_b_skeleton.healer import run_healing
+from part_b_skeleton.simplifier import run_simplification
 from shared.config import (
     TARGET_CRS,
     COLLAPSE_THRESHOLD,
@@ -284,13 +289,36 @@ def main():
     # Synthetic mask (13.7m/px) → larger snap to match coarser gaps
     heal_snap_m = max(25.0, meta.resolution_m * 16)
     healed_graph, heal_metrics = run_healing(
-        road_graph, snap_m=heal_snap_m, lcc_target=0.80
+        road_graph, snap_m=heal_snap_m, lcc_target=0.80,
+        resolution_m=meta.resolution_m,
     )
 
     # Re-save healed graph as the final graph.json (replaces raw extraction)
     from part_b_skeleton.graph_builder import save_graph_json, compute_graph_stats
     save_graph_json(healed_graph, graph_json_path)
     graph_stats = compute_graph_stats(healed_graph)
+
+    # ── Phase 14: degree-2 node collapse ──────────────────────────────────────
+    simplified_graph, simp_metrics = run_simplification(healed_graph)
+    save_graph_json(simplified_graph, graph_json_path)
+    graph_stats = compute_graph_stats(simplified_graph)
+
+    # ── Phase 15: healing quality validation + LCC gate ───────────────────────
+    val_result = healing_validation(
+        simplified_graph,
+        lcc_threshold=0.80,
+        second_pass_snap_m=40.0,
+        resolution_m=meta.resolution_m,
+    )
+    print_healing_validation(val_result)
+
+    # If second pass ran and improved graph, use the healed version
+    if val_result["passes_run"] == 2 and val_result["lcc_pass"]:
+        final_graph = val_result["healed_graph"]
+        save_graph_json(final_graph, graph_json_path)
+        graph_stats = compute_graph_stats(final_graph)
+    else:
+        final_graph = simplified_graph
 
     # ── Phase 02: contract validation (re-run on freshly written graph.json) ──
     contract_result = validate_graph_contract(graph_json_path)
@@ -300,11 +328,11 @@ def main():
     osm_graph, osm_stats = load_or_download_osm()
 
     # ── Phase 07: topology F1 vs OSM ground truth ─────────────────────────────
-    f1_result = graph_topology_f1(road_graph, osm_graph, snap_m=10.0)
+    f1_result = graph_topology_f1(final_graph, osm_graph, snap_m=10.0)
     print_topology_f1_result(f1_result)
 
     # ── Phase 08: connected components analysis ───────────────────────────────
-    conn_result = connectivity_report(road_graph)
+    conn_result = connectivity_report(final_graph)
     print_connectivity_report(conn_result)
 
     # ── Phase 09: judge-ready score report ────────────────────────────────────

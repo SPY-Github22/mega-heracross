@@ -837,3 +837,139 @@ def print_judge_report(metrics: dict) -> None:
     print(f"\n  Note: Scores on synthetic data are lower than real LISS-IV.")
     print(f"  Healing (Phase 12) and real mask (Phase 19) will improve all metrics.")
     print(f"{SEP}\n")
+
+
+# ══════════════════════════════════════════════════════════════
+# LAYER 2 — HEALING QUALITY VALIDATION  (Phase 15)
+# ══════════════════════════════════════════════════════════════
+
+def healing_validation(graph,
+                       lcc_threshold: float = 0.80,
+                       second_pass_snap_m: float = 40.0,
+                       resolution_m: float = 10.0) -> dict:
+    """
+    Layer 2: Post-healing quality gate.
+
+    After all healing and simplification, validates that the graph
+    meets the minimum LCC% threshold for Part C to produce meaningful
+    criticality analysis.
+
+    If LCC% < lcc_threshold:
+      - Runs a second healing pass with relaxed snap radius (40m default)
+      - Re-checks LCC%
+      - Reports both passes in the result
+
+    If LCC% still < lcc_threshold after second pass:
+      - Returns status='WARN' (not FAIL — Part C should still run,
+        but judge is warned the graph quality is suboptimal)
+
+    Parameters
+    ----------
+    graph             : RoadGraph
+    lcc_threshold     : float — minimum acceptable LCC% (default 0.80)
+    second_pass_snap_m: float — relaxed snap for second healing pass
+    resolution_m      : float — for adaptive pruning in second pass
+
+    Returns
+    -------
+    dict with:
+        status         : 'PASS' | 'PASS_AFTER_SECOND_PASS' | 'WARN'
+        lcc_pct        : float — final LCC%
+        lcc_pass       : bool
+        passes_run     : int  — 1 or 2
+        second_pass_edges: int — healing edges added in second pass (0 if not run)
+        message        : str  — human-readable summary
+    """
+    conn = connectivity_report(graph)
+    lcc_pct = conn['lcc_pct']
+
+    if lcc_pct >= lcc_threshold:
+        return {
+            "status":              "PASS",
+            "lcc_pct":             lcc_pct,
+            "lcc_pass":            True,
+            "passes_run":          1,
+            "second_pass_edges":   0,
+            "lcc_threshold":       lcc_threshold,
+            "message": (f"LCC={lcc_pct:.1%} ≥ {lcc_threshold:.0%} threshold — "
+                        f"graph ready for Part C"),
+        }
+
+    # ── Second healing pass with relaxed threshold ────────────
+    from part_b_skeleton.healer import detect_breaks, mst_heal
+
+    relaxed_snap = max(second_pass_snap_m, resolution_m * 16)
+    break_pairs, _ = detect_breaks(graph, snap_m=relaxed_snap)
+    healed2, heal2_metrics = mst_heal(
+        graph, break_pairs,
+        max_heal_dist_m=relaxed_snap,
+        lcc_target=lcc_threshold,
+    )
+
+    conn2    = connectivity_report(healed2)
+    lcc_pct2 = conn2['lcc_pct']
+    n_healed2 = heal2_metrics.get('healed_edges', 0)
+
+    if lcc_pct2 >= lcc_threshold:
+        status  = "PASS_AFTER_SECOND_PASS"
+        lcc_pass = True
+        message = (f"LCC={lcc_pct:.1%} after pass 1 → {lcc_pct2:.1%} after pass 2 "
+                   f"({n_healed2} extra edges, {relaxed_snap:.0f}m snap) — "
+                   f"threshold {lcc_threshold:.0%} reached")
+    else:
+        status  = "WARN"
+        lcc_pass = False
+        message = (f"LCC={lcc_pct2:.1%} still below {lcc_threshold:.0%} after 2 passes — "
+                   f"mask quality may be insufficient for full analysis")
+
+    return {
+        "status":             status,
+        "lcc_pct":            lcc_pct2,
+        "lcc_pct_pass1":      lcc_pct,
+        "lcc_pass":           lcc_pass,
+        "passes_run":         2,
+        "second_pass_edges":  n_healed2,
+        "second_pass_snap_m": relaxed_snap,
+        "lcc_threshold":      lcc_threshold,
+        "healed_graph":       healed2,
+        "message":            message,
+    }
+
+
+def print_healing_validation(result: dict) -> None:
+    """Print Phase 15 healing validation report."""
+    SEP = "─" * 60
+    status   = result["status"]
+    lcc      = result["lcc_pct"]
+    passes   = result["passes_run"]
+    thresh   = result["lcc_threshold"]
+
+    status_icon = {
+        "PASS":                  "✓",
+        "PASS_AFTER_SECOND_PASS": "✓",
+        "WARN":                  "⚠",
+    }.get(status, "?")
+
+    print(f"\n{SEP}")
+    print(f"  PHASE 15 — HEALING QUALITY VALIDATION")
+    print(SEP)
+    print(f"  LCC threshold     : {thresh:.0%}")
+    print(f"  Passes run        : {passes}")
+
+    if passes == 2:
+        print(f"  LCC after pass 1  : {result.get('lcc_pct_pass1', 0):.1%}  ✗ below threshold")
+        print(f"  Second pass snap  : {result.get('second_pass_snap_m', 0):.0f}m (relaxed)")
+        print(f"  Edges added (p2)  : {result['second_pass_edges']}")
+
+    print(f"  Final LCC%        : {lcc:.1%}  {status_icon}")
+    print(f"\n  {result['message']}")
+
+    print(f"\n{SEP}")
+    if status == "PASS":
+        print(f"  HEALING GATE: ✓ PASS (single pass sufficient)")
+    elif status == "PASS_AFTER_SECOND_PASS":
+        print(f"  HEALING GATE: ✓ PASS (required second pass at relaxed snap)")
+    else:
+        print(f"  HEALING GATE: ⚠ WARN — Part C will run but results are suboptimal")
+        print(f"  Action: improve Part A mask quality for better road coverage")
+    print(SEP)

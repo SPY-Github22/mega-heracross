@@ -432,17 +432,19 @@ def print_healing_report(metrics: Dict) -> None:
 
 def run_healing(graph: RoadGraph,
                 snap_m: float = 25.0,
-                lcc_target: float = 0.80
+                lcc_target: float = 0.80,
+                resolution_m: float = 10.0,
                 ) -> Tuple[RoadGraph, Dict]:
     """
-    Full Phases 10–12 healing pipeline:
-      detect_breaks → mst_heal → report
+    Full Phases 10–13 healing pipeline:
+      detect_breaks → mst_heal → prune_stubs → report
 
     Parameters
     ----------
-    graph      : RoadGraph — from Phase 05
-    snap_m     : float — break detection radius in metres
-    lcc_target : float — stop healing when LCC% reaches this
+    graph        : RoadGraph — from Phase 05
+    snap_m       : float — break detection radius in metres
+    lcc_target   : float — stop healing when LCC% reaches this
+    resolution_m : float — from meta.json, for adaptive pruning threshold
 
     Returns
     -------
@@ -460,5 +462,191 @@ def run_healing(graph: RoadGraph,
     )
     print_healing_report(heal_metrics)
 
-    all_metrics = {**detect_metrics, **heal_metrics}
-    return healed_graph, all_metrics
+    # Phase 13: prune spurious stubs
+    pruned_graph, prune_metrics = prune_stubs(
+        healed_graph, resolution_m=resolution_m
+    )
+    print_pruning_report(prune_metrics)
+
+    all_metrics = {**detect_metrics, **heal_metrics, **prune_metrics}
+    return pruned_graph, all_metrics
+
+
+# ══════════════════════════════════════════════════════════════
+# PHASE 13 — SPURIOUS BRANCH PRUNING
+# ══════════════════════════════════════════════════════════════
+
+def prune_stubs(graph: RoadGraph,
+                min_stub_length_m: float = 8.0,
+                resolution_m: float = 10.0,
+                max_iterations: int = 5
+                ) -> Tuple[RoadGraph, Dict]:
+    """
+    Phase 13: Iteratively remove degree-1 stub edges shorter than threshold.
+
+    A stub is a degree-1 edge — one endpoint has degree 1 (dead end).
+    Short stubs (< min_stub_length_m) are segmentation noise artifacts:
+      - Tiny branches at road junctions from imperfect skeletonization
+      - Single-pixel spurs at building edges mistaken for roads
+      - Sub-pixel noise at mask boundaries
+
+    Algorithm (iterative):
+      1. Find all degree-1 nodes
+      2. For each: if its single connecting edge is shorter than threshold,
+         mark both the node and edge for removal
+      3. Remove them, rebuild degree map
+      4. Repeat until no more short stubs found or max_iterations reached
+
+    Iterative because removing a stub may expose a new stub:
+      A─B─C  where A-B is short: removing A leaves B as new degree-1,
+      and B-C may also be short.
+
+    Conservative design:
+      - Never prune stubs longer than min_stub_length_m
+      - Never prune if it would leave the graph with < 3 nodes
+      - Never prune if it would disconnect the graph further
+      - Resolution-aware: default threshold = 1.5 × resolution_m
+
+    Parameters
+    ----------
+    graph             : RoadGraph
+    min_stub_length_m : float — stubs shorter than this are pruned (default 8m)
+    resolution_m      : float — from meta.json, used for adaptive threshold
+    max_iterations    : int   — safety cap on pruning iterations
+
+    Returns
+    -------
+    pruned_graph : RoadGraph
+    metrics      : dict with pruning statistics
+    """
+    import networkx as nx
+
+    # Resolution-aware threshold: prune stubs shorter than 1.5 pixels
+    # This catches 1–2 pixel noise but preserves genuine short stubs
+    adaptive_threshold = max(min_stub_length_m, resolution_m * 1.5)
+
+    total_pruned_nodes = 0
+    total_pruned_edges = 0
+    iterations_run = 0
+
+    current_nodes = list(graph.nodes)
+    current_edges = list(graph.edges)
+
+    for iteration in range(max_iterations):
+        iterations_run += 1
+
+        # Build NetworkX graph
+        G = nx.Graph()
+        G.add_nodes_from([n.id for n in current_nodes])
+        G.add_edges_from([(e.source, e.target) for e in current_edges])
+
+        # Safety: never prune below 3 nodes
+        if len(current_nodes) <= 3:
+            break
+
+        # Build lookup maps
+        node_by_id = {n.id: n for n in current_nodes}
+        edge_by_pair = {}
+        for e in current_edges:
+            edge_by_pair[frozenset([e.source, e.target])] = e
+
+        # Find degree-1 nodes with short stub edges
+        nodes_to_remove: Set[int] = set()
+        edges_to_remove: Set[frozenset] = set()
+
+        for nid in list(G.nodes()):
+            if G.degree(nid) != 1:
+                continue
+
+            # Get the single connecting edge
+            neighbours = list(G.neighbors(nid))
+            if not neighbours:
+                continue
+            nbr = neighbours[0]
+
+            pair = frozenset([nid, nbr])
+            edge = edge_by_pair.get(pair)
+            if edge is None:
+                continue
+
+            # Only prune if short enough
+            if edge.weight_m >= adaptive_threshold:
+                continue
+
+            # Safety: don't remove if neighbour would become isolated
+            # (degree 2 → degree 1 is fine; degree 1 → degree 0 is not)
+            if G.degree(nbr) == 1:
+                # Both endpoints are degree-1 — removing this edge
+                # isolates both nodes. Only prune if graph is large enough.
+                if len(current_nodes) - 2 < 3:
+                    continue
+
+            nodes_to_remove.add(nid)
+            edges_to_remove.add(pair)
+
+        if not nodes_to_remove:
+            break  # No more stubs to prune — done
+
+        # Apply removals
+        current_nodes = [n for n in current_nodes
+                         if n.id not in nodes_to_remove]
+        current_edges = [e for e in current_edges
+                         if frozenset([e.source, e.target]) not in edges_to_remove]
+
+        total_pruned_nodes += len(nodes_to_remove)
+        total_pruned_edges += len(edges_to_remove)
+
+    pruned_graph = RoadGraph(
+        nodes = current_nodes,
+        edges = current_edges,
+        crs   = TARGET_CRS,
+    )
+
+    metrics = {
+        "pruned_nodes":       total_pruned_nodes,
+        "pruned_edges":       total_pruned_edges,
+        "iterations":         iterations_run,
+        "threshold_m":        adaptive_threshold,
+        "nodes_before":       len(graph.nodes),
+        "edges_before":       len(graph.edges),
+        "nodes_after":        len(current_nodes),
+        "edges_after":        len(current_edges),
+        "reduction_pct":      round(
+            total_pruned_nodes / len(graph.nodes) * 100
+            if graph.nodes else 0, 2),
+    }
+
+    return pruned_graph, metrics
+
+
+def print_pruning_report(metrics: Dict) -> None:
+    """Print Phase 13 pruning report."""
+    SEP = "─" * 60
+    pruned = metrics["pruned_nodes"]
+    reduction = metrics["reduction_pct"]
+
+    print(f"\n{SEP}")
+    print(f"  PHASE 13 — SPURIOUS BRANCH PRUNING")
+    print(SEP)
+    print(f"  Prune threshold   : {metrics['threshold_m']:.1f} m")
+    print(f"  Iterations run    : {metrics['iterations']}")
+    print(f"  Nodes: {metrics['nodes_before']} → {metrics['nodes_after']} "
+          f"(removed {metrics['pruned_nodes']})")
+    print(f"  Edges: {metrics['edges_before']} → {metrics['edges_after']} "
+          f"(removed {metrics['pruned_edges']})")
+    print(f"  Reduction         : {reduction:.1f}%")
+
+    if pruned == 0:
+        print(f"\n  ✓ No stubs shorter than {metrics['threshold_m']:.1f}m found")
+        print(f"  ✓ Graph is clean — no noise artifacts detected")
+    elif reduction < 10:
+        print(f"\n  ✓ Minor cleanup — {pruned} noise stubs removed")
+    elif reduction < 30:
+        print(f"\n  ○ Moderate pruning — check mask quality if > 20%")
+    else:
+        print(f"\n  ⚠ Heavy pruning ({reduction:.1f}%) — mask may have"
+              f" significant noise")
+
+    print(f"\n{SEP}")
+    print(f"  PRUNING: ✓ COMPLETE ({pruned} stubs removed)")
+    print(SEP)
