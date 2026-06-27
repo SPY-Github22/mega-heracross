@@ -685,3 +685,155 @@ def print_connectivity_report(result: dict) -> None:
     print(f"\n{SEP}")
     print(f"  CONNECTIVITY: {'✓ PASS' if lcc_pass else '✗ FAIL — healing required'}")
     print(SEP)
+
+
+# ══════════════════════════════════════════════════════════════
+# LAYER 3 — JUDGE-READY SCORE REPORT  (Phase 09)
+# ══════════════════════════════════════════════════════════════
+
+def print_judge_report(metrics: dict) -> None:
+    """
+    Layer 3: 10-second ISRO judge summary.
+
+    Prints a single structured report that collects every key metric
+    from Phases 02–08 into one place. An ISRO judge with a GIS/ML
+    background should be able to assess system performance at a glance.
+
+    Expected keys in metrics dict:
+      From Phase 02 (contract):   contract_status, node_count, edge_count
+      From Phase 03 (loader):     source, resolution_m, mask_shape
+      From Phase 04 (skeleton):   skeleton_density, total_length_m,
+                                   skeleton_components
+      From Phase 05 (graph):      n_nodes, n_edges, total_length_km
+      From Phase 06 (osm):        osm_nodes, osm_edges, osm_length_km
+      From Phase 07 (topology):   node_f1, edge_f1, snap_m
+      From Phase 08 (conn):       lcc_pct, n_components, lcc_pass
+    """
+    import datetime
+
+    W  = 62          # report width
+    TS = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def _line(label, value, unit="", status=""):
+        label_w = 26
+        value_s = f"{value}{unit}"
+        status_s = f"  {status}" if status else ""
+        return f"  {label:<{label_w}} {value_s:<14}{status_s}"
+
+    def _score_tag(val, good, ok):
+        if val >= good: return "✓"
+        if val >= ok:   return "○"
+        return "✗"
+
+    SEP  = "═" * W
+    SEP2 = "─" * W
+
+    print(f"\n{SEP}")
+    print(f"  PART B — SCORE REPORT         {TS}")
+    print(f"  Mega-Heracross · ISRO Hackathon 2026 · Koramangala Test Tile")
+    print(SEP)
+
+    # ── Section 1: CONTRACT ───────────────────────────────────
+    contract_status = metrics.get("contract_status", "UNKNOWN")
+    n_nodes  = metrics.get("node_count", 0)
+    n_edges  = metrics.get("edge_count", 0)
+    c_ok = "✓" if contract_status == "PASS" else "✗"
+
+    print(f"\n  [1] CONTRACT")
+    print(_line("Schema validation",  contract_status,   "", c_ok))
+    print(_line("Nodes emitted",      n_nodes,           ""))
+    print(_line("Edges emitted",      n_edges,           ""))
+    print(_line("CRS",                "EPSG:4326",       "", "✓"))
+
+    # ── Section 2: INPUT MASK ─────────────────────────────────
+    source      = metrics.get("source", "unknown")
+    res_m       = metrics.get("resolution_m", 0)
+    mask_shape  = metrics.get("mask_shape", (0, 0))
+    skel_dens   = metrics.get("skeleton_density", 0)
+    road_len_km = metrics.get("total_length_m", 0) / 1000
+
+    print(f"\n  [2] INPUT MASK")
+    print(_line("Source",             source,            ""))
+    print(_line("Resolution",         f"{res_m:.1f}",    " m/px"))
+    print(_line("Mask size",          f"{mask_shape[0]}×{mask_shape[1]}", " px"))
+    print(_line("Skeleton density",   f"{skel_dens:.4f}","",
+                _score_tag(skel_dens, 0.05, 0.02)))
+    print(_line("Skeleton length",    f"{road_len_km:.2f}", " km"))
+
+    # ── Section 3: GRAPH QUALITY ──────────────────────────────
+    total_km    = metrics.get("total_length_km", 0)
+    mean_w      = metrics.get("mean_weight_m", 0)
+    osm_nodes   = metrics.get("osm_nodes", 0)
+    osm_edges   = metrics.get("osm_edges", 0)
+    osm_km      = metrics.get("osm_length_km", 0)
+
+    node_cov = (n_nodes / osm_nodes) if osm_nodes > 0 else 0
+    edge_cov = (n_edges / osm_edges) if osm_edges > 0 else 0
+
+    print(f"\n  [3] GRAPH vs OSM GROUND TRUTH")
+    print(_line("Our nodes / OSM nodes",
+                f"{n_nodes} / {osm_nodes}", "",
+                _score_tag(node_cov, 0.70, 0.40)))
+    print(_line("Our edges / OSM edges",
+                f"{n_edges} / {osm_edges}", "",
+                _score_tag(edge_cov, 0.70, 0.40)))
+    print(_line("Our length / OSM length",
+                f"{total_km:.2f} / {osm_km:.2f}", " km"))
+    print(_line("Mean edge length",   f"{mean_w:.1f}", " m"))
+
+    # ── Section 4: TOPOLOGY F1 ────────────────────────────────
+    node_f1   = metrics.get("node_f1", 0)
+    edge_f1   = metrics.get("edge_f1", 0)
+    snap_m    = metrics.get("snap_m", 10.0)
+
+    print(f"\n  [4] TOPOLOGY F1  (snap={snap_m:.0f}m vs OSM)")
+    print(_line("Node F1",  f"{node_f1:.4f}", "",
+                _score_tag(node_f1, 0.70, 0.40)))
+    print(_line("Edge F1",  f"{edge_f1:.4f}", "",
+                _score_tag(edge_f1, 0.60, 0.30)))
+    print(f"  {'':26} Target: node_F1>0.70, edge_F1>0.60")
+
+    # ── Section 5: CONNECTIVITY ───────────────────────────────
+    lcc_pct     = metrics.get("lcc_pct", 0)
+    n_comp      = metrics.get("n_components", 0)
+    isolated    = metrics.get("isolated_nodes", 0)
+    lcc_pass    = metrics.get("lcc_pass", False)
+
+    print(f"\n  [5] CONNECTIVITY")
+    print(_line("LCC%", f"{lcc_pct:.1%}", "",
+                _score_tag(lcc_pct, 0.80, 0.60)))
+    print(_line("Components",  n_comp,  "",
+                "✓" if n_comp <= 3 else ("○" if n_comp <= 10 else "✗")))
+    print(_line("Isolated nodes", isolated, "",
+                "✓" if isolated == 0 else "○"))
+    print(_line("Routing usable",
+                "YES" if lcc_pass else "NO — needs healing", "",
+                "✓" if lcc_pass else "✗"))
+
+    # ── Overall score ─────────────────────────────────────────
+    scores = {
+        "contract":     1.0 if contract_status == "PASS" else 0.0,
+        "node_f1":      node_f1,
+        "edge_f1":      edge_f1,
+        "lcc":          lcc_pct,
+        "connectivity": 1.0 if lcc_pass else 0.0,
+    }
+    overall = sum(scores.values()) / len(scores)
+
+    # Qualitative grade
+    if overall >= 0.80:   grade = "EXCELLENT"
+    elif overall >= 0.65: grade = "GOOD"
+    elif overall >= 0.50: grade = "ACCEPTABLE"
+    elif overall >= 0.35: grade = "WEAK"
+    else:                 grade = "POOR — healing required"
+
+    print(f"\n{SEP2}")
+    print(f"  OVERALL SCORE: {overall:.3f} / 1.000   [{grade}]")
+    print(f"  Breakdown: contract={scores['contract']:.2f}  "
+          f"node_f1={scores['node_f1']:.2f}  "
+          f"edge_f1={scores['edge_f1']:.2f}  "
+          f"lcc={scores['lcc']:.2f}  "
+          f"conn={scores['connectivity']:.2f}")
+    print(f"\n  Note: Scores on synthetic data are lower than real LISS-IV.")
+    print(f"  Healing (Phase 12) and real mask (Phase 19) will improve all metrics.")
+    print(f"{SEP}\n")

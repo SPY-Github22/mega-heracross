@@ -24,6 +24,7 @@ PHASE TRACKER (update as phases complete)
     Phase 06 ✓  OSM ground truth download for Koramangala
     Phase 07 ✓  Graph topology accuracy metric (node/edge F1)
     Phase 08 ✓  Connected components analysis
+    Phase 09 ✓  Judge-ready score report
     ...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
@@ -46,7 +47,8 @@ if _REPO_ROOT not in sys.path:
 from shared.schema import RoadMaskMeta, GraphNode, GraphEdge, RoadGraph
 from shared.eval import (validate_graph_contract, print_contract_result,
                          graph_topology_f1, print_topology_f1_result,
-                         connectivity_report, print_connectivity_report)
+                         connectivity_report, print_connectivity_report,
+                         print_judge_report)
 from part_b_skeleton.loader import load_inputs, print_loader_report
 from part_b_skeleton.skeletonize import run_skeletonization
 from part_b_skeleton.graph_builder import build_and_save_graph
@@ -287,6 +289,41 @@ def main():
     # ── Phase 08: connected components analysis ───────────────────────────────
     conn_result = connectivity_report(road_graph)
     print_connectivity_report(conn_result)
+
+    # ── Phase 09: judge-ready score report ────────────────────────────────────
+    judge_metrics = {
+        # Contract (Phase 02)
+        "contract_status": contract_result["status"],
+        "node_count":      contract_result["node_count"],
+        "edge_count":      contract_result["edge_count"],
+        # Loader (Phase 03)
+        "source":          meta.source,
+        "resolution_m":    meta.resolution_m,
+        "mask_shape":      mask.shape,
+        # Skeleton (Phase 04)
+        "skeleton_density": skel_metrics["skeleton_density"],
+        "total_length_m":   skel_metrics["total_length_m"],
+        "skeleton_components": skel_metrics["n_components"],
+        # Graph (Phase 05)
+        "n_nodes":         graph_stats["n_nodes"],
+        "n_edges":         graph_stats["n_edges"],
+        "total_length_km": graph_stats["total_length_km"],
+        "mean_weight_m":   graph_stats["mean_weight_m"],
+        # OSM (Phase 06)
+        "osm_nodes":       osm_stats["n_nodes"],
+        "osm_edges":       osm_stats["n_edges"],
+        "osm_length_km":   osm_stats["total_length_km"],
+        # Topology F1 (Phase 07)
+        "node_f1":         f1_result["node_f1"],
+        "edge_f1":         f1_result["edge_f1"],
+        "snap_m":          f1_result["snap_m"],
+        # Connectivity (Phase 08)
+        "lcc_pct":         conn_result["lcc_pct"],
+        "n_components":    conn_result["n_components"],
+        "isolated_nodes":  conn_result["isolated_nodes"],
+        "lcc_pass":        conn_result["lcc_pass"],
+    }
+    print_judge_report(judge_metrics)
 
     # Exit with non-zero status if any violation found
     # so CI/CD pipelines can catch scaffold failures
