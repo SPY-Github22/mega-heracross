@@ -25,6 +25,9 @@ PHASE TRACKER (update as phases complete)
     Phase 07 ✓  Graph topology accuracy metric (node/edge F1)
     Phase 08 ✓  Connected components analysis
     Phase 09 ✓  Judge-ready score report
+    Phase 10 ✓  KD-Tree break detection
+    Phase 11 ✓  Union-Find component tracking
+    Phase 12 ✓  MST-guided gap bridging
     ...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
@@ -53,6 +56,7 @@ from part_b_skeleton.loader import load_inputs, print_loader_report
 from part_b_skeleton.skeletonize import run_skeletonization
 from part_b_skeleton.graph_builder import build_and_save_graph
 from part_b_skeleton.osm_reference import load_or_download_osm
+from part_b_skeleton.healer import run_healing
 from shared.config import (
     TARGET_CRS,
     COLLAPSE_THRESHOLD,
@@ -275,6 +279,19 @@ def main():
         skeleton, affine, graph_json_path
     )
 
+    # ── Phases 10–12: topological healing ─────────────────────────────────────
+    # Snap radius scales with resolution: real LISS-IV (5.8m/px) → 25m snap
+    # Synthetic mask (13.7m/px) → larger snap to match coarser gaps
+    heal_snap_m = max(25.0, meta.resolution_m * 16)
+    healed_graph, heal_metrics = run_healing(
+        road_graph, snap_m=heal_snap_m, lcc_target=0.80
+    )
+
+    # Re-save healed graph as the final graph.json (replaces raw extraction)
+    from part_b_skeleton.graph_builder import save_graph_json, compute_graph_stats
+    save_graph_json(healed_graph, graph_json_path)
+    graph_stats = compute_graph_stats(healed_graph)
+
     # ── Phase 02: contract validation (re-run on freshly written graph.json) ──
     contract_result = validate_graph_contract(graph_json_path)
     print_contract_result(contract_result)
@@ -301,10 +318,10 @@ def main():
         "resolution_m":    meta.resolution_m,
         "mask_shape":      mask.shape,
         # Skeleton (Phase 04)
-        "skeleton_density": skel_metrics["skeleton_density"],
-        "total_length_m":   skel_metrics["total_length_m"],
+        "skeleton_density":    skel_metrics["skeleton_density"],
+        "total_length_m":      skel_metrics["total_length_m"],
         "skeleton_components": skel_metrics["n_components"],
-        # Graph (Phase 05)
+        # Graph (Phase 05 — healed)
         "n_nodes":         graph_stats["n_nodes"],
         "n_edges":         graph_stats["n_edges"],
         "total_length_km": graph_stats["total_length_km"],
@@ -322,6 +339,10 @@ def main():
         "n_components":    conn_result["n_components"],
         "isolated_nodes":  conn_result["isolated_nodes"],
         "lcc_pass":        conn_result["lcc_pass"],
+        # Healing (Phases 10-12)
+        "healed_edges":    heal_metrics.get("healed_edges", 0),
+        "lcc_before":      heal_metrics.get("lcc_before", 0),
+        "lcc_after":       heal_metrics.get("lcc_after", 0),
     }
     print_judge_report(judge_metrics)
 
