@@ -23,6 +23,7 @@ PHASE TRACKER (update as phases complete)
     Phase 05 ✓  sknw graph extraction + RoadGraph emission
     Phase 06 ✓  OSM ground truth download for Koramangala
     Phase 07 ✓  Graph topology accuracy metric (node/edge F1)
+    Phase 08 ✓  Connected components analysis
     ...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
@@ -44,7 +45,8 @@ if _REPO_ROOT not in sys.path:
 # ── Contract imports ─────────────────────────────────────────────────────────
 from shared.schema import RoadMaskMeta, GraphNode, GraphEdge, RoadGraph
 from shared.eval import (validate_graph_contract, print_contract_result,
-                         graph_topology_f1, print_topology_f1_result)
+                         graph_topology_f1, print_topology_f1_result,
+                         connectivity_report, print_connectivity_report)
 from part_b_skeleton.loader import load_inputs, print_loader_report
 from part_b_skeleton.skeletonize import run_skeletonization
 from part_b_skeleton.graph_builder import build_and_save_graph
@@ -282,13 +284,19 @@ def main():
     f1_result = graph_topology_f1(road_graph, osm_graph, snap_m=10.0)
     print_topology_f1_result(f1_result)
 
+    # ── Phase 08: connected components analysis ───────────────────────────────
+    conn_result = connectivity_report(road_graph)
+    print_connectivity_report(conn_result)
+
     # Exit with non-zero status if any violation found
     # so CI/CD pipelines can catch scaffold failures
     n_violations = len(const_violations) + len(schema_violations)
-    loader_ok   = loader_metrics.get("loader_pass", True)
-    skeleton_ok = len(skel_violations) == 0
-    graph_ok    = len(graph_violations) == 0
-    contract_ok = contract_result["status"] == "PASS"
+    loader_ok    = loader_metrics.get("loader_pass", True)
+    skeleton_ok  = len(skel_violations) == 0
+    graph_ok     = len(graph_violations) == 0
+    contract_ok  = contract_result["status"] == "PASS"
+    # Note: connectivity failure is reported but does NOT block exit —
+    # healing (Phase 12) is expected to fix LCC% before Part C runs
     sys.exit(0 if (n_violations == 0 and loader_ok and skeleton_ok
                    and graph_ok and contract_ok) else 1)
 

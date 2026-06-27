@@ -527,3 +527,161 @@ def print_topology_f1_result(result: dict) -> None:
     print(f"   real LISS-IV mask + healing will dramatically improve these)")
     print(f"\n{SEP}")
     print(SEP)
+
+
+# ══════════════════════════════════════════════════════════════
+# LAYER 2 — CONNECTIVITY REPORT  (Phase 08)
+# ══════════════════════════════════════════════════════════════
+
+def connectivity_report(graph) -> dict:
+    """
+    Layer 2: Connected components analysis.
+
+    Builds a NetworkX graph from RoadGraph and computes:
+      n_components     — number of connected components (lower = better)
+      lcc_nodes        — node count of largest connected component
+      lcc_pct          — LCC as % of total nodes (key health metric)
+      isolated_nodes   — degree-0 nodes (completely disconnected)
+      small_components — components with < 5 nodes (likely noise/artifacts)
+      mean_component_size — average nodes per component
+      lcc_pass         — bool: LCC% > 60% (minimum usable threshold)
+
+    LCC% interpretation:
+      > 80% : healthy graph, healing is working well
+      60-80%: acceptable, some fragmentation remains
+      < 60% : graph is too fragmented for reliable routing analysis
+              Phase 12 healing must fix this before Part C runs
+
+    Parameters
+    ----------
+    graph : RoadGraph — from shared/schema.py
+
+    Returns
+    -------
+    dict of connectivity metrics
+    """
+    import networkx as nx
+
+    n_nodes = len(graph.nodes)
+    n_edges = len(graph.edges)
+
+    # ── Edge case: empty graph ────────────────────────────────
+    if n_nodes == 0:
+        return {
+            "n_nodes":            0,
+            "n_edges":            0,
+            "n_components":       0,
+            "lcc_nodes":          0,
+            "lcc_pct":            0.0,
+            "isolated_nodes":     0,
+            "small_components":   0,
+            "mean_component_size": 0.0,
+            "lcc_pass":           False,
+            "lcc_threshold":      0.60,
+        }
+
+    # ── Build undirected NetworkX graph ───────────────────────
+    G = nx.Graph()
+    G.add_nodes_from([n.id for n in graph.nodes])
+    G.add_edges_from([(e.source, e.target) for e in graph.edges])
+
+    # ── Connected components ──────────────────────────────────
+    components = list(nx.connected_components(G))
+    n_components = len(components)
+    component_sizes = sorted([len(c) for c in components], reverse=True)
+
+    lcc_nodes = component_sizes[0] if component_sizes else 0
+    lcc_pct   = lcc_nodes / n_nodes if n_nodes > 0 else 0.0
+
+    # Isolated nodes: degree 0 (no edges at all)
+    isolated_nodes = sum(1 for n in G.nodes() if G.degree(n) == 0)
+
+    # Small components: < 5 nodes (likely noise artifacts)
+    small_components = sum(1 for s in component_sizes if s < 5)
+
+    mean_component_size = (sum(component_sizes) / n_components
+                           if n_components > 0 else 0.0)
+
+    LCC_THRESHOLD = 0.60
+
+    return {
+        "n_nodes":             n_nodes,
+        "n_edges":             n_edges,
+        "n_components":        n_components,
+        "lcc_nodes":           lcc_nodes,
+        "lcc_pct":             round(lcc_pct, 4),
+        "isolated_nodes":      isolated_nodes,
+        "small_components":    small_components,
+        "mean_component_size": round(mean_component_size, 1),
+        "lcc_pass":            lcc_pct >= LCC_THRESHOLD,
+        "lcc_threshold":       LCC_THRESHOLD,
+        "component_sizes":     component_sizes,
+    }
+
+
+def print_connectivity_report(result: dict) -> None:
+    """Print Phase 08 connectivity report."""
+    SEP = "─" * 60
+
+    lcc_pct    = result["lcc_pct"]
+    lcc_pass   = result["lcc_pass"]
+    threshold  = result["lcc_threshold"]
+
+    # Visual LCC bar
+    bar_width  = 30
+    filled     = int(lcc_pct * bar_width)
+    thresh_pos = int(threshold * bar_width)
+    bar        = list("░" * bar_width)
+    for i in range(filled):
+        bar[i] = "█"
+    if thresh_pos < bar_width:
+        bar[thresh_pos] = "|"   # threshold marker
+    bar_str = "".join(bar)
+
+    # Health label
+    if lcc_pct >= 0.80:
+        health = "✓ HEALTHY"
+    elif lcc_pct >= 0.60:
+        health = "○ ACCEPTABLE"
+    elif lcc_pct >= 0.40:
+        health = "⚠ FRAGMENTED"
+    else:
+        health = "✗ CRITICAL"
+
+    print(f"\n{SEP}")
+    print(f"  PHASE 08 — CONNECTED COMPONENTS ANALYSIS")
+    print(SEP)
+    print(f"  Total nodes       : {result['n_nodes']}")
+    print(f"  Total edges       : {result['n_edges']}")
+    print(f"  Components        : {result['n_components']}")
+    print(f"  Mean comp. size   : {result['mean_component_size']:.1f} nodes")
+    print(f"  Isolated nodes    : {result['isolated_nodes']}")
+    print(f"  Small comps (<5)  : {result['small_components']}")
+    print(f"\n  LCC (Largest Connected Component)")
+    print(f"    Nodes in LCC    : {result['lcc_nodes']} / {result['n_nodes']}")
+    print(f"    LCC%            : {lcc_pct:.1%}  {health}")
+    print(f"    [{bar_str}] {lcc_pct:.0%}")
+    print(f"     threshold={threshold:.0%}─┘  (minimum for routing analysis)")
+
+    # Component size distribution
+    sizes = result.get("component_sizes", [])
+    if len(sizes) > 1:
+        print(f"\n  Component sizes (largest first):")
+        for i, s in enumerate(sizes[:5]):
+            pct = s / result["n_nodes"]
+            bar2 = "█" * int(pct * 20) + "░" * (20 - int(pct * 20))
+            print(f"    [{i+1}] {s:4d} nodes  {bar2}  {pct:.1%}")
+        if len(sizes) > 5:
+            print(f"    ... and {len(sizes)-5} more small components")
+
+    print(f"\n  Routing implications:")
+    if lcc_pass:
+        print(f"    ✓ Graph is usable for Part C criticality analysis")
+        print(f"    ✓ {lcc_pct:.1%} of nodes reachable from largest component")
+    else:
+        print(f"    ✗ LCC% = {lcc_pct:.1%} < {threshold:.0%} threshold")
+        print(f"    ✗ Phase 12 MST healing must improve connectivity before Part C")
+
+    print(f"\n{SEP}")
+    print(f"  CONNECTIVITY: {'✓ PASS' if lcc_pass else '✗ FAIL — healing required'}")
+    print(SEP)
