@@ -20,6 +20,7 @@ PHASE TRACKER (update as phases complete)
     Phase 02 ✓  Contract validation in shared/eval.py
     Phase 03 ✓  Synthetic mask loader + geo-transform
     Phase 04 ✓  Zhang-Suen skeletonization
+    Phase 05 ✓  sknw graph extraction + RoadGraph emission
     ...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
@@ -43,6 +44,7 @@ from shared.schema import RoadMaskMeta, GraphNode, GraphEdge, RoadGraph
 from shared.eval import validate_graph_contract, print_contract_result
 from part_b_skeleton.loader import load_inputs, print_loader_report
 from part_b_skeleton.skeletonize import run_skeletonization
+from part_b_skeleton.graph_builder import build_and_save_graph
 from shared.config import (
     TARGET_CRS,
     COLLAPSE_THRESHOLD,
@@ -243,12 +245,8 @@ def main():
     )
 
     # ── Phase 02: contract validation ─────────────────────────────────────────
-    # Runs on every execution. If graph.json doesn't exist yet, reports
-    # FILE_NOT_FOUND (expected at this stage). Once Phase 05 emits graph.json,
-    # this will validate it automatically on every subsequent run.
+    # Path defined here, used after Phase 05 writes the file.
     graph_json_path = os.path.join(_REPO_ROOT, GRAPH_PATH)
-    contract_result = validate_graph_contract(graph_json_path)
-    print_contract_result(contract_result)
 
     # ── Phase 03: mask loader + geo-transform ──────────────────────────────────
     mask_path = os.path.join(_REPO_ROOT, ROAD_MASK_PATH)
@@ -263,12 +261,25 @@ def main():
         mask, resolution_m=meta.resolution_m
     )
 
+    # ── Phase 05: sknw graph extraction + RoadGraph emission ──────────────────
+    graph_json_path = os.path.join(_REPO_ROOT, GRAPH_PATH)
+    road_graph, graph_stats, graph_violations = build_and_save_graph(
+        skeleton, affine, graph_json_path
+    )
+
+    # ── Phase 02: contract validation (re-run on freshly written graph.json) ──
+    contract_result = validate_graph_contract(graph_json_path)
+    print_contract_result(contract_result)
+
     # Exit with non-zero status if any violation found
     # so CI/CD pipelines can catch scaffold failures
     n_violations = len(const_violations) + len(schema_violations)
-    loader_ok    = loader_metrics.get("loader_pass", True)
-    skeleton_ok  = len(skel_violations) == 0
-    sys.exit(0 if (n_violations == 0 and loader_ok and skeleton_ok) else 1)
+    loader_ok   = loader_metrics.get("loader_pass", True)
+    skeleton_ok = len(skel_violations) == 0
+    graph_ok    = len(graph_violations) == 0
+    contract_ok = contract_result["status"] == "PASS"
+    sys.exit(0 if (n_violations == 0 and loader_ok and skeleton_ok
+                   and graph_ok and contract_ok) else 1)
 
 
 if __name__ == "__main__":
