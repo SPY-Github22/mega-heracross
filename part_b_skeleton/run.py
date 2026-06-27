@@ -21,6 +21,7 @@ PHASE TRACKER (update as phases complete)
     Phase 03 ✓  Synthetic mask loader + geo-transform
     Phase 04 ✓  Zhang-Suen skeletonization
     Phase 05 ✓  sknw graph extraction + RoadGraph emission
+    Phase 06 ✓  OSM ground truth download for Koramangala
     ...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
@@ -45,6 +46,7 @@ from shared.eval import validate_graph_contract, print_contract_result
 from part_b_skeleton.loader import load_inputs, print_loader_report
 from part_b_skeleton.skeletonize import run_skeletonization
 from part_b_skeleton.graph_builder import build_and_save_graph
+from part_b_skeleton.osm_reference import load_or_download_osm
 from shared.config import (
     TARGET_CRS,
     COLLAPSE_THRESHOLD,
@@ -270,6 +272,9 @@ def main():
     # ── Phase 02: contract validation (re-run on freshly written graph.json) ──
     contract_result = validate_graph_contract(graph_json_path)
     print_contract_result(contract_result)
+
+    # ── Phase 06: OSM ground truth download ───────────────────────────────────
+    osm_graph, osm_stats = load_or_download_osm()
 
     # Exit with non-zero status if any violation found
     # so CI/CD pipelines can catch scaffold failures
