@@ -22,6 +22,7 @@ PHASE TRACKER (update as phases complete)
     Phase 04 ✓  Zhang-Suen skeletonization
     Phase 05 ✓  sknw graph extraction + RoadGraph emission
     Phase 06 ✓  OSM ground truth download for Koramangala
+    Phase 07 ✓  Graph topology accuracy metric (node/edge F1)
     ...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
@@ -42,7 +43,8 @@ if _REPO_ROOT not in sys.path:
 
 # ── Contract imports ─────────────────────────────────────────────────────────
 from shared.schema import RoadMaskMeta, GraphNode, GraphEdge, RoadGraph
-from shared.eval import validate_graph_contract, print_contract_result
+from shared.eval import (validate_graph_contract, print_contract_result,
+                         graph_topology_f1, print_topology_f1_result)
 from part_b_skeleton.loader import load_inputs, print_loader_report
 from part_b_skeleton.skeletonize import run_skeletonization
 from part_b_skeleton.graph_builder import build_and_save_graph
@@ -275,6 +277,10 @@ def main():
 
     # ── Phase 06: OSM ground truth download ───────────────────────────────────
     osm_graph, osm_stats = load_or_download_osm()
+
+    # ── Phase 07: topology F1 vs OSM ground truth ─────────────────────────────
+    f1_result = graph_topology_f1(road_graph, osm_graph, snap_m=10.0)
+    print_topology_f1_result(f1_result)
 
     # Exit with non-zero status if any violation found
     # so CI/CD pipelines can catch scaffold failures

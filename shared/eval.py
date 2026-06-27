@@ -336,3 +336,194 @@ def graph_fragility_score(graph, n_removals: int = 50) -> dict:
 def bootstrap_topology_ci(our_graph, osm_graph, n_boot: int = 100) -> dict:
     """Phase 24: Bootstrap confidence intervals on topology metrics."""
     return {"status": "NOT_IMPLEMENTED", "phase": "24"}
+
+
+# ══════════════════════════════════════════════════════════════
+# LAYER 2 — TOPOLOGY F1  (Phase 07)
+# ══════════════════════════════════════════════════════════════
+
+def graph_topology_f1(our_graph, osm_graph, snap_m: float = 10.0) -> dict:
+    """
+    Layer 2: Node and edge F1 vs OSM ground truth.
+
+    Algorithm
+    ---------
+    Node matching (KDTree snap):
+      1. Build KDTree on OSM node coordinates (lat-scaled to metres)
+      2. For each node in our graph, find nearest OSM node
+      3. If distance <= snap_m: match (true positive)
+      4. Unmatched our-nodes = false positives
+      5. Unmatched OSM nodes = false negatives
+
+    Edge matching:
+      An edge (u,v) in our graph matches an OSM edge (a,b) if:
+        - our node u snaps to OSM node a (or b)
+        - our node v snaps to OSM node b (or a)
+      i.e. both endpoints must snap to the same OSM edge endpoints.
+
+    Returns
+    -------
+    dict with:
+      node_precision, node_recall, node_f1
+      edge_precision, edge_recall, edge_f1
+      matched_nodes, our_nodes, osm_nodes
+      matched_edges, our_edges, osm_edges
+      snap_m  (the tolerance used)
+    """
+    import math
+    import numpy as np
+    from scipy.spatial import KDTree
+
+    # ── Coordinate scaling ─────────────────────────────────────
+    # Convert lat/lon to approximate metres for KDTree distance queries.
+    # At Koramangala (~13°N):
+    #   1 deg lat ≈ 111,320 m
+    #   1 deg lon ≈ 108,498 m
+    METRES_PER_DEG_LAT = 111_320.0
+    centre_lat = sum(n.lat for n in osm_graph.nodes) / max(len(osm_graph.nodes), 1)
+    METRES_PER_DEG_LON = 111_320.0 * math.cos(math.radians(centre_lat))
+
+    def to_metres(lat, lon):
+        return (lat * METRES_PER_DEG_LAT, lon * METRES_PER_DEG_LON)
+
+    # ── Build KDTree on OSM nodes ──────────────────────────────
+    osm_nodes  = list(osm_graph.nodes)
+    n_osm_nodes = len(osm_nodes)
+    osm_coords = np.array([to_metres(n.lat, n.lon) for n in osm_nodes])
+    tree = KDTree(osm_coords)
+
+    # ── Query: nearest OSM node for each of our nodes ──────────
+    our_nodes = list(our_graph.nodes)
+
+    # Guard: empty our_graph
+    if len(our_nodes) == 0:
+        return {
+            "snap_m": snap_m,
+            "node_precision": 0.0, "node_recall": 0.0, "node_f1": 0.0,
+            "edge_precision": 0.0, "edge_recall": 0.0, "edge_f1": 0.0,
+            "matched_nodes": 0, "our_nodes": 0, "osm_nodes": n_osm_nodes,
+            "matched_edges": 0, "our_edges": 0, "osm_edges": len(list(osm_graph.edges)),
+        }
+
+    our_coords = np.array([to_metres(n.lat, n.lon) for n in our_nodes])
+
+    # Query: nearest OSM node for each of our nodes
+    dists, osm_idxs = tree.query(our_coords, k=1)
+
+    # our_to_osm[i] = OSM node index if snapped, else -1
+    our_to_osm = {}
+    osm_matched = set()
+
+    for i, (dist, osm_idx) in enumerate(zip(dists, osm_idxs)):
+        if dist <= snap_m:
+            our_to_osm[i] = int(osm_idx)
+            osm_matched.add(int(osm_idx))
+        else:
+            our_to_osm[i] = -1
+
+    n_matched_nodes = len(osm_matched)
+    n_our_nodes     = len(our_nodes)
+    n_osm_nodes     = len(osm_nodes)
+
+    node_precision = n_matched_nodes / n_our_nodes  if n_our_nodes  > 0 else 0.0
+    node_recall    = n_matched_nodes / n_osm_nodes  if n_osm_nodes  > 0 else 0.0
+    node_f1 = (2 * node_precision * node_recall /
+               (node_precision + node_recall)
+               if (node_precision + node_recall) > 0 else 0.0)
+
+    # ── Edge matching ──────────────────────────────────────────
+    # Build set of OSM edge pairs (as frozensets of OSM node indices)
+    osm_edge_set = set()
+    for e in osm_graph.edges:
+        # Map OSM graph node IDs back to KDTree indices
+        src_osm_id = e.source
+        tgt_osm_id = e.target
+        osm_edge_set.add(frozenset([src_osm_id, tgt_osm_id]))
+
+    # Build node-id-to-index maps
+    our_node_id_to_idx  = {n.id: i for i, n in enumerate(our_nodes)}
+    osm_node_id_to_idx  = {n.id: i for i, n in enumerate(osm_nodes)}
+
+    matched_edges = 0
+    for e in our_graph.edges:
+        src_idx = our_node_id_to_idx.get(e.source, -1)
+        tgt_idx = our_node_id_to_idx.get(e.target, -1)
+        if src_idx == -1 or tgt_idx == -1:
+            continue
+
+        osm_src = our_to_osm.get(src_idx, -1)
+        osm_tgt = our_to_osm.get(tgt_idx, -1)
+        if osm_src == -1 or osm_tgt == -1:
+            continue
+
+        # Translate KDTree indices back to OSM node IDs
+        osm_src_id = osm_nodes[osm_src].id
+        osm_tgt_id = osm_nodes[osm_tgt].id
+        if frozenset([osm_src_id, osm_tgt_id]) in osm_edge_set:
+            matched_edges += 1
+
+    n_our_edges = len(our_graph.edges)
+    n_osm_edges = len(osm_graph.edges)
+
+    edge_precision = matched_edges / n_our_edges if n_our_edges > 0 else 0.0
+    edge_recall    = matched_edges / n_osm_edges if n_osm_edges > 0 else 0.0
+    edge_f1 = (2 * edge_precision * edge_recall /
+               (edge_precision + edge_recall)
+               if (edge_precision + edge_recall) > 0 else 0.0)
+
+    return {
+        "snap_m":          snap_m,
+        "node_precision":  round(node_precision, 4),
+        "node_recall":     round(node_recall, 4),
+        "node_f1":         round(node_f1, 4),
+        "edge_precision":  round(edge_precision, 4),
+        "edge_recall":     round(edge_recall, 4),
+        "edge_f1":         round(edge_f1, 4),
+        "matched_nodes":   n_matched_nodes,
+        "our_nodes":       n_our_nodes,
+        "osm_nodes":       n_osm_nodes,
+        "matched_edges":   matched_edges,
+        "our_edges":       n_our_edges,
+        "osm_edges":       n_osm_edges,
+    }
+
+
+def print_topology_f1_result(result: dict) -> None:
+    """Print Phase 07 topology F1 report."""
+    SEP = "─" * 60
+
+    def _bar(val, width=20):
+        filled = int(val * width)
+        return "█" * filled + "░" * (width - filled)
+
+    def _grade(f1):
+        if f1 >= 0.80: return "✓ STRONG"
+        if f1 >= 0.60: return "○ ACCEPTABLE"
+        if f1 >= 0.40: return "⚠ WEAK"
+        return "✗ POOR"
+
+    print(f"\n{SEP}")
+    print(f"  PHASE 07 — TOPOLOGY F1 vs OSM GROUND TRUTH")
+    print(f"  Snap tolerance: {result['snap_m']}m")
+    print(SEP)
+    print(f"\n  NODE MATCHING")
+    print(f"    Our nodes  : {result['our_nodes']}")
+    print(f"    OSM nodes  : {result['osm_nodes']}")
+    print(f"    Matched    : {result['matched_nodes']}")
+    print(f"    Precision  : {result['node_precision']:.4f}  {_bar(result['node_precision'])}")
+    print(f"    Recall     : {result['node_recall']:.4f}  {_bar(result['node_recall'])}")
+    print(f"    F1         : {result['node_f1']:.4f}  {_grade(result['node_f1'])}")
+
+    print(f"\n  EDGE MATCHING")
+    print(f"    Our edges  : {result['our_edges']}")
+    print(f"    OSM edges  : {result['osm_edges']}")
+    print(f"    Matched    : {result['matched_edges']}")
+    print(f"    Precision  : {result['edge_precision']:.4f}  {_bar(result['edge_precision'])}")
+    print(f"    Recall     : {result['edge_recall']:.4f}  {_bar(result['edge_recall'])}")
+    print(f"    F1         : {result['edge_f1']:.4f}  {_grade(result['edge_f1'])}")
+
+    print(f"\n  ISRO JUDGE TARGET: node_F1 > 0.70, edge_F1 > 0.60")
+    print(f"  (Low scores on synthetic data are expected —")
+    print(f"   real LISS-IV mask + healing will dramatically improve these)")
+    print(f"\n{SEP}")
+    print(SEP)
