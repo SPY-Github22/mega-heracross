@@ -33,6 +33,10 @@ PHASE TRACKER (update as phases complete)
     Phase 15 ✓  Healing quality validation + LCC gate
     Phase 16 ✓  Haversine weight_m audit on all edges
     Phase 17 ✓  osmnx fallback demo mode
+    Phase 18 ✓  Multi-resolution mask support
+    Phase 19 ✓  End-to-end integration test
+    Phase 20 ✓  Bearing-aware spline healing
+    Phase 21 ✓  SAR-guided occlusion map integration
     ...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
@@ -66,6 +70,11 @@ from part_b_skeleton.healer import run_healing
 from part_b_skeleton.simplifier import run_simplification
 from part_b_skeleton.weight_auditor import run_weight_audit
 from part_b_skeleton.osmnx_fallback import is_osmnx_mode, run_osmnx_fallback
+from part_b_skeleton.resolution_config import make_config, print_resolution_config
+from part_b_skeleton.tests.test_integration import run_and_report as run_integration_test
+from part_b_skeleton.sar_integration import (
+    run_sar_integration, sar_guided_heal, print_sar_report
+)
 from shared.config import (
     TARGET_CRS,
     COLLAPSE_THRESHOLD,
@@ -303,14 +312,49 @@ def main():
             skeleton, affine, graph_json_path
         )
 
-    # ── Phases 10–12: topological healing ─────────────────────────────────────
-    # Snap radius scales with resolution: real LISS-IV (5.8m/px) → 25m snap
-    # Synthetic mask (13.7m/px) → larger snap to match coarser gaps
-    heal_snap_m = max(25.0, meta.resolution_m * 16)
-    healed_graph, heal_metrics = run_healing(
-        road_graph, snap_m=heal_snap_m, lcc_target=0.80,
-        resolution_m=meta.resolution_m,
-    )
+    # ── Phase 18: resolution-aware config ────────────────────────────────────
+    res_cfg = make_config(meta.resolution_m, source=meta.source)
+    print_resolution_config(res_cfg)
+
+    # ── Phase 21: SAR-guided occlusion map ────────────────────────────────────
+    # Only available in part_b mode (osmnx mode has no mask)
+    if not is_osmnx_mode() and mask is not None:
+        sar_mask_path = os.path.join(_REPO_ROOT, "part_a_vision/outputs/sar_mask.npy")
+        occlusion_map, sar_metrics, sar_available = run_sar_integration(
+            mask, affine, sar_mask_path=sar_mask_path
+        )
+    else:
+        occlusion_map = None
+        sar_available = False
+        sar_metrics   = {}
+
+    # ── Phases 10–12/20: topological healing ──────────────────────────────────
+    # If SAR occlusion map available, use SAR-guided healing (Phase 21)
+    # Otherwise fall back to standard spline healing (Phase 20)
+    if occlusion_map is not None and occlusion_map.any():
+        from part_b_skeleton.healer import detect_breaks
+        break_pairs, detect_metrics = detect_breaks(
+            road_graph, snap_m=res_cfg.snap_m
+        )
+        healed_graph, heal_metrics = sar_guided_heal(
+            road_graph, break_pairs, occlusion_map, affine,
+            snap_m=res_cfg.snap_m, lcc_target=0.80,
+        )
+        print_sar_report(sar_metrics, heal_metrics=heal_metrics,
+                         sar_available=sar_available)
+        # Run pruning after SAR-guided healing
+        from part_b_skeleton.healer import prune_stubs, print_pruning_report
+        healed_graph, prune_metrics = prune_stubs(
+            healed_graph, resolution_m=res_cfg.effective_resolution_m
+        )
+        print_pruning_report(prune_metrics)
+    else:
+        healed_graph, heal_metrics = run_healing(
+            road_graph,
+            snap_m=res_cfg.snap_m,
+            lcc_target=0.80,
+            resolution_m=res_cfg.effective_resolution_m,
+        )
 
     # Re-save healed graph as the final graph.json (replaces raw extraction)
     from part_b_skeleton.graph_builder import save_graph_json, compute_graph_stats
@@ -326,8 +370,8 @@ def main():
     val_result = healing_validation(
         simplified_graph,
         lcc_threshold=0.80,
-        second_pass_snap_m=40.0,
-        resolution_m=meta.resolution_m,
+        second_pass_snap_m=res_cfg.second_pass_snap_m,
+        resolution_m=res_cfg.effective_resolution_m,
     )
     print_healing_validation(val_result)
 
@@ -398,6 +442,9 @@ def main():
     }
     print_judge_report(judge_metrics)
 
+    # ── Phase 19: end-to-end integration test ────────────────────────────────
+    integration_passed = run_integration_test(verbose=False)
+
     # Exit with non-zero status if any violation found
     # so CI/CD pipelines can catch scaffold failures
     n_violations = len(const_violations) + len(schema_violations)
@@ -408,7 +455,8 @@ def main():
     # Note: connectivity failure is reported but does NOT block exit —
     # healing (Phase 12) is expected to fix LCC% before Part C runs
     sys.exit(0 if (n_violations == 0 and loader_ok and skeleton_ok
-                   and graph_ok and contract_ok) else 1)
+                   and graph_ok and contract_ok
+                   and integration_passed) else 1)
 
 
 if __name__ == "__main__":

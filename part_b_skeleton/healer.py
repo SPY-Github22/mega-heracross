@@ -281,13 +281,16 @@ def mst_heal(graph: RoadGraph,
     if not break_pairs:
         conn = connectivity_report(graph)
         return graph, {
-            "healed_edges":       0,
-            "lcc_before":         conn["lcc_pct"],
-            "lcc_after":          conn["lcc_pct"],
-            "lcc_improvement":    0.0,
-            "components_before":  conn["n_components"],
-            "components_after":   conn["n_components"],
-            "healing_pass":       0,
+            "healed_edges":            0,
+            "skipped_same_component":  0,
+            "skipped_too_far":         0,
+            "lcc_before":              conn["lcc_pct"],
+            "lcc_after":               conn["lcc_pct"],
+            "lcc_improvement":         0.0,
+            "components_before":       conn["n_components"],
+            "components_after":        conn["n_components"],
+            "healing_pass":            0,
+            "lcc_target_reached":      conn["lcc_pct"] >= lcc_target,
         }
 
     # ── Baseline connectivity ─────────────────────────────────
@@ -434,10 +437,11 @@ def run_healing(graph: RoadGraph,
                 snap_m: float = 25.0,
                 lcc_target: float = 0.80,
                 resolution_m: float = 10.0,
+                use_spline: bool = True,
                 ) -> Tuple[RoadGraph, Dict]:
     """
     Full Phases 10–13 healing pipeline:
-      detect_breaks → mst_heal → prune_stubs → report
+      detect_breaks → mst_heal (or spline_heal) → prune_stubs → report
 
     Parameters
     ----------
@@ -445,6 +449,8 @@ def run_healing(graph: RoadGraph,
     snap_m       : float — break detection radius in metres
     lcc_target   : float — stop healing when LCC% reaches this
     resolution_m : float — from meta.json, for adaptive pruning threshold
+    use_spline   : bool  — if True, use Phase 20 bearing-aware spline healing
+                           (default True); False falls back to linear MST
 
     Returns
     -------
@@ -454,13 +460,24 @@ def run_healing(graph: RoadGraph,
     break_pairs, detect_metrics = detect_breaks(graph, snap_m=snap_m)
     print_break_detection_report(detect_metrics)
 
-    # Phase 12: MST heal
-    healed_graph, heal_metrics = mst_heal(
-        graph, break_pairs,
-        max_heal_dist_m=snap_m,
-        lcc_target=lcc_target,
-    )
-    print_healing_report(heal_metrics)
+    # Phase 12 / 20: heal gaps
+    if use_spline and break_pairs:
+        from part_b_skeleton.spline_healer import (
+            bearing_aware_spline_bridge, print_spline_healing_report
+        )
+        healed_graph, heal_metrics = bearing_aware_spline_bridge(
+            graph, break_pairs,
+            max_heal_dist_m=snap_m,
+            lcc_target=lcc_target,
+        )
+        print_spline_healing_report(heal_metrics)
+    else:
+        healed_graph, heal_metrics = mst_heal(
+            graph, break_pairs,
+            max_heal_dist_m=snap_m,
+            lcc_target=lcc_target,
+        )
+        print_healing_report(heal_metrics)
 
     # Phase 13: prune spurious stubs
     pruned_graph, prune_metrics = prune_stubs(
