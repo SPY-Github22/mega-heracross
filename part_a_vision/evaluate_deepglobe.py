@@ -43,7 +43,7 @@ def main():
     if iou > 0.60:
         print("✅ Target Met! IoU > 0.60 on DeepGlobe.")
     else:
-        print("⚠️ Model did not hit 0.60 IoU. Ensure model was trained with Focal Loss and AdaIN.")
+        print("[!] Model did not hit 0.60 IoU. Ensure model was trained with Focal Loss and AdaIN.")
     print("============================================================")
 
 if __name__ == "__main__":

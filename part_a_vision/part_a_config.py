@@ -1,7 +1,7 @@
 # part_a_vision/part_a_config.py
 # Part A internal configuration.
 # Imports locked constants from shared/config.py and adds Part A-specific settings.
-# You are allowed to tune these — they don't affect the contract.
+# You are allowed to tune these - they don't affect the contract.
 
 import os
 import sys
@@ -29,11 +29,11 @@ from shared.config import (
 # ── Model Architecture ─────────────────────────────────────────────────────────
 # Primary: SegFormer B3 (45M params, hierarchical transformer)
 # Fallback: DeepLabV3+ with ResNet-50 backbone
-# To switch: change MODEL_BACKBONE here — the model loader checks this string.
+# To switch: change MODEL_BACKBONE here - the model loader checks this string.
 MODEL_BACKBONE = "segformer_b3"       # "deeplabv3plus_resnet50" as fallback
 
 # ── Input Configuration ────────────────────────────────────────────────────────
-TILE_SIZE         = 512               # pixels — SegFormer requires multiples of 32
+TILE_SIZE         = 512               # pixels - SegFormer requires multiples of 32
 N_OPTICAL_BANDS   = 4                 # LISS-IV: Green, Red, NIR, SWIR
 N_SAR_BANDS       = 2                 # Sentinel-1: VV, VH polarization
 N_INDEX_BANDS     = 0                 # Phase 22 adds 3 (NDVI, NDWI, RPI)
@@ -43,8 +43,8 @@ N_CLASSES         = 2                 # binary: road (1) vs background (0)
 # ── Training Hyperparameters ───────────────────────────────────────────────────
 BATCH_SIZE        = 8
 LEARNING_RATE     = 1e-4              # default LR (DeepLabV3+ / single-LR training)
-ENCODER_LR        = 6e-5             # SegFormer encoder LR (slower — pretrained)
-DECODER_LR        = 6e-4             # SegFormer decoder LR (faster — trained from scratch)
+ENCODER_LR        = 6e-5             # SegFormer encoder LR (slower - pretrained)
+DECODER_LR        = 6e-4             # SegFormer decoder LR (faster - trained from scratch)
 WEIGHT_DECAY      = 1e-4
 N_EPOCHS          = 50
 EARLY_STOP_PATIENCE = 10             # stop if val IoU doesn't improve for 10 epochs
@@ -75,8 +75,8 @@ SYNTHETIC_RESOLUTION_M      = 5.8    # match LISS-IV resolution
 
 # ── Post-processing ────────────────────────────────────────────────────────────
 # Phase 18 uses these.
-# Conservative values — aggressive post-processing can merge distinct roads.
-MORPHOLOGY_CLOSE_RADIUS     = 3       # pixels — fills gaps smaller than this
+# Conservative values - aggressive post-processing can merge distinct roads.
+MORPHOLOGY_CLOSE_RADIUS     = 3       # pixels - fills gaps smaller than this
 MIN_ROAD_COMPONENT_PX       = 50     # remove isolated components below this area
 
 # ── Evaluation ────────────────────────────────────────────────────────────────

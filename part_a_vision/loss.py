@@ -1,5 +1,5 @@
 """
-Phase 8 + Phase 9 — Custom Loss: Dice + BCE + Boundary
+Phase 8 + Phase 9 - Custom Loss: Dice + BCE + Boundary
 =======================================================
 
 Phase 8: DiceLoss + CombinedLoss(Dice, BCE)
@@ -19,9 +19,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# Phase 15 — Focal Loss
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
+# Phase 15 - Focal Loss
+# ---------------------------------------------------------------------------
 class FocalLoss(nn.Module):
     """
     Focal Loss handles extreme class imbalance by down-weighting easy examples.
@@ -44,9 +44,9 @@ class FocalLoss(nn.Module):
         f_loss = self.alpha * (1 - pt)**self.gamma * bce_loss
         return f_loss.mean()
 
-# ═══════════════════════════════════════════════════════════════════════════
-# Phase 8 — Dice Loss
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
+# Phase 8 - Dice Loss
+# ---------------------------------------------------------------------------
 class DiceLoss(nn.Module):
     """
     Binary Dice loss applied to raw logits.
@@ -79,12 +79,12 @@ class DiceLoss(nn.Module):
         return 1.0 - dice_coeff.mean()
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# Phase 9 — Sobel Edge Detector (Task 1)
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
+# Phase 9 - Sobel Edge Detector (Task 1)
+# ---------------------------------------------------------------------------
 class SobelEdgeDetector(nn.Module):
     """
-    Differentiable Sobel edge detector using fixed 3×3 kernels.
+    Differentiable Sobel edge detector using fixed 3x3 kernels.
 
     Sobel X:          Sobel Y:
       [-1  0  1]        [-1 -2 -1]
@@ -95,7 +95,7 @@ class SobelEdgeDetector(nn.Module):
 
     Why fixed kernels (not learnable):
         Learnable edges require GT edge annotations we don't have.
-        Sobel is analytically correct for our use case — we know roads
+        Sobel is analytically correct for our use case - we know roads
         have sharp transitions from 0→1 in the mask, so the Sobel
         operator perfectly captures what "boundary sharpness" means.
     """
@@ -126,9 +126,9 @@ class SobelEdgeDetector(nn.Module):
         return torch.sqrt(gx ** 2 + gy ** 2 + 1e-8)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# Phase 9 — Boundary Loss (Task 2)
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
+# Phase 9 - Boundary Loss (Task 2)
+# ---------------------------------------------------------------------------
 class BoundaryLoss(nn.Module):
     """
     L_boundary = MSE( Sobel(pred_prob), Sobel(gt_mask) )
@@ -181,9 +181,9 @@ class BoundaryLoss(nn.Module):
             return F.mse_loss(pred_edges, gt_edges)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# Phase 10 — Connectivity Loss via Soft Skeletonization
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
+# Phase 10 - Connectivity Loss via Soft Skeletonization
+# ---------------------------------------------------------------------------
 class SoftSkeletonize(nn.Module):
     """
     Differentiable soft skeletonization using morphological operations.
@@ -238,9 +238,9 @@ class ConnectivityLoss(nn.Module):
         return 1.0 - dice_coeff.mean()
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# Phase 9/10 — Four-Term Combined Loss
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
+# Phase 9/10 - Four-Term Combined Loss
+# ---------------------------------------------------------------------------
 class CombinedLoss(nn.Module):
     """
     Total = α·Dice + β·BCE + γ·Boundary + δ·Connectivity
@@ -279,8 +279,8 @@ class CombinedLoss(nn.Module):
                 target: torch.Tensor):
         """
         Returns:
-            total_loss  — scalar autograd tensor
-            components  — { 'dice': float, 'bce': float, 'boundary': float, 'conn': float }
+            total_loss  - scalar autograd tensor
+            components  - { 'dice': float, 'bce': float, 'boundary': float, 'conn': float }
         """
         # Ensure pos_weight matches device of target to prevent crash
         if hasattr(self.bce_loss, 'pos_weight') and self.bce_loss.pos_weight is not None:
@@ -305,9 +305,9 @@ class CombinedLoss(nn.Module):
         return total, components
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 # Quick sanity checks
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     print("=== Phase 9/10 Loss Sanity Check ===\n")
 
@@ -319,7 +319,7 @@ if __name__ == "__main__":
     edge_input = torch.zeros(B, C, H, W)
     edge_input[:, :, 100:150, 100:200] = 1.0  # vertical edge at x=100, x=150
     edges = sobel(edge_input)
-    print(f"Sobel on step edge   — max={edges.max().item():.4f}, mean={edges.mean().item():.6f}")
+    print(f"Sobel on step edge   - max={edges.max().item():.4f}, mean={edges.mean().item():.6f}")
 
     # ── Soft Skeletonize ──
     skel_layer = SoftSkeletonize(num_iter=10)
@@ -327,7 +327,7 @@ if __name__ == "__main__":
     rect = torch.zeros(B, C, H, W)
     rect[:, :, 100:110, 100:130] = 1.0
     skel_rect = skel_layer(rect)
-    print(f"Skeleton of rectangle — max={skel_rect.max().item():.4f}, nonzeros={skel_rect.sum().item():.0f}")
+    print(f"Skeleton of rectangle - max={skel_rect.max().item():.4f}, nonzeros={skel_rect.sum().item():.0f}")
 
     # ── Connectivity Loss ──
     conn = ConnectivityLoss(num_iter=10)

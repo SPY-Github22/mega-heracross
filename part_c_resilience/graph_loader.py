@@ -3,6 +3,7 @@ import json
 import logging
 import networkx as nx
 import osmnx as ox
+import os
 from shapely.geometry import LineString
 
 from shared.schema import RoadGraph, GraphNode, GraphEdge
@@ -10,7 +11,11 @@ from shared.schema import RoadGraph, GraphNode, GraphEdge
 logger = logging.getLogger("part_c")
 
 # Set OSMnx timeout
-ox.config(timeout=30)
+try:
+    ox.settings.timeout = 30
+    ox.settings.log_console = True
+except AttributeError:
+    ox.config(timeout=30, log_console=True)
 
 # ── Validation ──────────────────────────────────────────────────
 def _validate_type(value, expected_type, field_name):
@@ -105,10 +110,12 @@ def load_graph(graph_path: str) -> nx.Graph:
 
 def fallback_to_osmnx(bbox: tuple, output_path: str = None) -> nx.Graph:
     logger.info("Falling back to OSMnx for road network download...")
-    north, south, east, west = bbox[3], bbox[1], bbox[2], bbox[0]
-    G_osmnx = ox.graph_from_bbox(north, south, east, west, network_type='drive')
+    G_osmnx = ox.graph_from_bbox(bbox=bbox, network_type='drive')
     logger.info(f"Downloaded OSMnx graph with {len(G_osmnx.nodes)} nodes, {len(G_osmnx.edges)} edges")
-    G_undirected = ox.utils_graph.get_undirected(G_osmnx)
+    try:
+        G_undirected = ox.convert.to_undirected(G_osmnx)
+    except AttributeError:
+        G_undirected = ox.utils_graph.get_undirected(G_osmnx)
 
     nodes = []
     for osm_id, data in G_undirected.nodes(data=True):

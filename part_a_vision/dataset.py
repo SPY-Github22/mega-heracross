@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Phase 7 — Task 1 & 2: RoadDataset + Augmentation Pipeline
+Phase 7 - Task 1 & 2: RoadDataset + Augmentation Pipeline
 ==========================================================
 torch.utils.data.Dataset subclass that generates or loads fused
 optical-SAR tiles paired with binary road masks, applies albumentations
@@ -11,7 +11,7 @@ Place at: part_a_vision/dataset.py
 Key design decisions:
   - 200 synthetic tile variants (different seeds, occlusion types)
   - 80/20 train/val split
-  - Class-weighted BCE (weight_road=6.0) — roads ~15% of pixels
+  - Class-weighted BCE (weight_road=6.0) - roads ~15% of pixels
   - Augmentations on optical channels only (SAR is physics-based)
 """
 
@@ -49,7 +49,7 @@ TOTAL_CHANNELS: int = NUM_OPTICAL_BANDS + NUM_SAR_BANDS  # 6
 CLASS_WEIGHT_ROAD: float = 6.0
 CLASS_WEIGHT_BACKGROUND: float = 1.0
 
-# Synthetic seed range — each seed produces a distinct Koramangala tile variant
+# Synthetic seed range - each seed produces a distinct Koramangala tile variant
 SEED_START: int = 1000
 
 
@@ -62,8 +62,8 @@ class RoadDataset(Dataset):
     PyTorch Dataset for road segmentation on fused optical-SAR tiles.
 
     Each item is a (fused_tensor, gt_mask) pair:
-      - fused_tensor: (C, H, W) float32 — optical + SAR concatenated
-      - gt_mask: (H, W) int64 — binary road mask {0, 1}
+      - fused_tensor: (C, H, W) float32 - optical + SAR concatenated
+      - gt_mask: (H, W) int64 - binary road mask {0, 1}
 
     Parameters
     ----------
@@ -209,7 +209,7 @@ class RoadDataset(Dataset):
         return fused_tensor, mask_tensor
 
     # -------------------------------------------------------------------
-    # Tile generation (Task 1 — 200 synthetic variants)
+    # Tile generation (Task 1 - 200 synthetic variants)
     # -------------------------------------------------------------------
 
     def _generate_synthetic_tiles(self, num_tiles: int) -> List[dict]:
@@ -257,7 +257,7 @@ class RoadDataset(Dataset):
         try:
             return self._make_tile_full_pipeline(seed)
         except Exception as exc:
-            logger.debug("Full pipeline unavailable for seed %d: %s — using procedural", seed, exc)
+            logger.debug("Full pipeline unavailable for seed %d: %s - using procedural", seed, exc)
             return self._make_tile_procedural(seed)
 
     def _make_tile_full_pipeline(
@@ -357,7 +357,7 @@ class RoadDataset(Dataset):
                 cloud_mask += cloud * opacity
             cloud_mask = np.clip(cloud_mask, 0, 1)
 
-            # Apply cloud only to optical channels (not SAR — C-band penetrates!)
+            # Apply cloud only to optical channels (not SAR - C-band penetrates!)
             for b in range(NUM_OPTICAL_BANDS):
                 optical[b] = optical[b] * (1 - cloud_mask) + cloud_mask * rng.uniform(0.7, 0.95)
 
@@ -443,7 +443,7 @@ class RoadDataset(Dataset):
         return mask
 
     # -------------------------------------------------------------------
-    # Task 2 — Data Augmentation
+    # Task 2 - Data Augmentation
     # -------------------------------------------------------------------
 
     def _setup_augmentations(self) -> None:
@@ -469,12 +469,12 @@ class RoadDataset(Dataset):
                     brightness_limit=0.15, contrast_limit=0.15, p=0.5,
                 ),
 
-                # Elastic deformation — simulates road curvature variation
+                # Elastic deformation - simulates road curvature variation
                 A.ElasticTransform(
                     alpha=50, sigma=5, p=0.2,
                 ),
 
-                # Coarse dropout — simulates additional occlusion
+                # Coarse dropout - simulates additional occlusion
                 A.CoarseDropout(
                     num_holes_range=(2, 8), hole_height_range=(8, 32), hole_width_range=(8, 32),
                     fill_value=0, p=0.2,
@@ -483,7 +483,7 @@ class RoadDataset(Dataset):
             self._albumentations_available = True
         except ImportError:
             logger.warning(
-                "albumentations not installed — augmentations disabled. "
+                "albumentations not installed - augmentations disabled. "
                 "Install with: pip install albumentations"
             )
             self.transform = None
@@ -497,7 +497,7 @@ class RoadDataset(Dataset):
 
         NOTE: Brightness/contrast is applied to ALL channels by albumentations.
         For a stricter version, we'd only augment optical channels (0:4).
-        This is flagged as a known limitation — Phase 11 can refine.
+        This is flagged as a known limitation - Phase 11 can refine.
         """
         if self.transform is None:
             return fused, mask
@@ -699,7 +699,7 @@ def build_dataloaders(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Phase 7 — Generate synthetic training tiles")
+    parser = argparse.ArgumentParser(description="Phase 7 - Generate synthetic training tiles")
     parser.add_argument("--num-tiles", type=int, default=NUM_TILES, help="Number of tiles")
     parser.add_argument("--tile-size", type=int, default=DEFAULT_TILE_SIZE, help="Tile size")
     parser.add_argument("--cache-dir", type=str, default="data/synthetic_tiles", help="Cache directory")

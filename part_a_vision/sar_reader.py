@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Phase 5 — SAR Preprocessing Pipeline
+Phase 5 - SAR Preprocessing Pipeline
 =====================================
 Sentinel-1 GRD ingestion: VV/VH loading, dB conversion, Lee speckle filter,
 percentile normalization, upsampling to optical resolution, and a synthetic
@@ -21,7 +21,7 @@ Usage:
 
 Key Physics (for judge presentations):
     Roads appear DARK in SAR because smooth asphalt acts as a specular
-    reflector — the radar pulse bounces away from the antenna (forward
+    reflector - the radar pulse bounces away from the antenna (forward
     scatter), returning almost no signal.  Buildings appear BRIGHT due
     to double-bounce (ground + wall → back to antenna) and corner
     reflections.  This is why SAR complements optical: clouds block
@@ -29,7 +29,7 @@ Key Physics (for judge presentations):
 
 Caveats:
     - Sentinel-1 at 10 m is coarser than LISS-IV at 5.8 m.  Upsampling
-      to 5.8 m does NOT add information — it simply aligns grids for
+      to 5.8 m does NOT add information - it simply aligns grids for
       Phase 6 fusion.  Flag this honestly.
     - Lee filter is a despeckling heuristic, not a learned denoiser.
       Phase 13 may replace it with a learned variant.
@@ -56,7 +56,7 @@ if not logger.handlers:
 # Constants
 # ---------------------------------------------------------------------------
 
-# Default bounding box for Bengaluru test tile (EPSG:4326) — Koramangala area
+# Default bounding box for Bengaluru test tile (EPSG:4326) - Koramangala area
 DEFAULT_BBOX: Tuple[float, float, float, float] = (
     77.6050,  # min_lon (west)
     12.9250,  # min_lat (south)
@@ -183,7 +183,7 @@ class SARPreprocessor:
             and os.path.isfile(vh_path)
         )
         if not real_available:
-            logger.info("Real SAR tile unavailable — generating synthetic SAR")
+            logger.info("Real SAR tile unavailable - generating synthetic SAR")
             return self._synthetic_fallback(meta)
 
         # ---- Task 1: load VV and VH GeoTIFFs ----
@@ -228,7 +228,7 @@ class SARPreprocessor:
         return sar_tensor, meta
 
     # -----------------------------------------------------------------------
-    # Task 1 — SAR GeoTIFF reader
+    # Task 1 - SAR GeoTIFF reader
     # -----------------------------------------------------------------------
 
     def _load_sar_band(
@@ -270,7 +270,7 @@ class SARPreprocessor:
         return band, crs_str, resolution_m
 
     # -----------------------------------------------------------------------
-    # Task 2 — dB conversion
+    # Task 2 - dB conversion
     # -----------------------------------------------------------------------
 
     def _to_db(self, vv: np.ndarray, vh: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -294,12 +294,12 @@ class SARPreprocessor:
         return vv_db, vh_db
 
     # -----------------------------------------------------------------------
-    # Task 3 — Lee speckle filter
+    # Task 3 - Lee speckle filter
     # -----------------------------------------------------------------------
 
     def _lee_filter(self, image: np.ndarray) -> np.ndarray:
         """
-        Lee sigma filter for speckle reduction (7×7 local window).
+        Lee sigma filter for speckle reduction (7x7 local window).
 
         Formula:
             filtered = mean_local + K * (pixel - mean_local)
@@ -329,7 +329,7 @@ class SARPreprocessor:
         filtered = mean_local + K * (image - mean_local)
 
         logger.info(
-            "Lee filter (%d×%d): K range [%.3f, %.3f], mean K=%.3f",
+            "Lee filter (%dx%d): K range [%.3f, %.3f], mean K=%.3f",
             w, w, float(K.min()), float(K.max()), float(K.mean()),
         )
 
@@ -338,14 +338,14 @@ class SARPreprocessor:
     def _median_filter(self, image: np.ndarray, kernel_size: int = 5) -> np.ndarray:
         """
         Simpler alternative: median filter for speckle reduction.
-        Included for comparison — Lee filter preserves road linearity better.
+        Included for comparison - Lee filter preserves road linearity better.
         """
         from scipy.ndimage import median_filter
 
         return median_filter(image, size=kernel_size).astype(np.float32)
 
     # -----------------------------------------------------------------------
-    # Task 4 — Normalization and resampling
+    # Task 4 - Normalization and resampling
     # -----------------------------------------------------------------------
 
     def _normalize_channel(self, channel: np.ndarray) -> np.ndarray:
@@ -402,7 +402,7 @@ class SARPreprocessor:
         return resampled.astype(np.float32)
 
     # -----------------------------------------------------------------------
-    # Task 5 — Synthetic SAR generator
+    # Task 5 - Synthetic SAR generator
     # -----------------------------------------------------------------------
 
     def _synthetic_fallback(self, meta: SARMeta) -> Tuple[np.ndarray, SARMeta]:
@@ -432,7 +432,7 @@ class SARPreprocessor:
         rng = np.random.RandomState(42)
 
         # Step 1: Rayleigh speckle background (realistic SAR texture)
-        # Rayleigh parameter controls brightness — urban ~0.3
+        # Rayleigh parameter controls brightness - urban ~0.3
         vv_speckle = rng.rayleigh(scale=0.3, size=(size, size)).astype(np.float32)
         vh_speckle = rng.rayleigh(scale=0.25, size=(size, size)).astype(np.float32)
 
@@ -538,7 +538,7 @@ def preprocess_sar(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Phase 5 — SAR Preprocessing Pipeline")
+    parser = argparse.ArgumentParser(description="Phase 5 - SAR Preprocessing Pipeline")
     parser.add_argument("vv", nargs="?", default=None, help="Path to VV polarization GeoTIFF")
     parser.add_argument("vh", nargs="?", default=None, help="Path to VH polarization GeoTIFF")
     parser.add_argument("--target-size", type=int, default=512, help="Target spatial size (default: 512)")
@@ -556,6 +556,6 @@ if __name__ == "__main__":
     print(f"VH dB range:      [{meta.vh_db_min:.1f}, {meta.vh_db_max:.1f}]")
     print(f"Native res:       {meta.native_resolution_m} m")
     print(f"Target res:       {meta.target_resolution_m} m")
-    print(f"Lee window:       {meta.lee_window}×{meta.lee_window}")
+    print(f"Lee window:       {meta.lee_window}x{meta.lee_window}")
     print(f"CRS:              {meta.source_crs}")
     print(f"Warnings:         {meta.warnings}")

@@ -36,7 +36,7 @@ import numpy as np
 import cv2
 from scipy.ndimage import gaussian_filter
 
-# Non-interactive backend — prevents matplotlib from trying to open a window
+# Non-interactive backend - prevents matplotlib from trying to open a window
 # on Windows when running from the terminal. Must be set BEFORE pyplot import.
 import matplotlib
 matplotlib.use('Agg')
@@ -57,9 +57,9 @@ from part_a_vision.part_a_config import (
 from part_a_vision.output_writer import write_road_mask, write_meta, load_and_verify
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 # SPECTRAL SIGNATURES
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 #
 # These values approximate the spectral reflectance of each land cover type
 # as seen by LISS-IV's 4 bands, normalized to [0, 1].
@@ -121,13 +121,13 @@ SAR_NOISE_STD = {
 
 # Pixel width used when drawing roads onto the mask.
 # At 5.8m/pixel, a 2-pixel road = ~11.6m wide (typical 2-lane Indian road).
-# This is thin enough to be challenging for the model — exactly what we want.
+# This is thin enough to be challenging for the model - exactly what we want.
 ROAD_WIDTH_PX = 2
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 # DATA CONTAINERS
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 
 @dataclass
 class SyntheticTile:
@@ -135,19 +135,19 @@ class SyntheticTile:
     One complete synthetic tile with all its components.
     The model sees (optical + sar) as input and tries to predict gt_mask.
     """
-    optical:          np.ndarray   # (4, H, W) float32 — model input (optical bands)
-    sar:              np.ndarray   # (2, H, W) float32 — model input (SAR bands)
-    gt_mask:          np.ndarray   # (H, W) uint8      — ground truth (road=1, bg=0)
-    cloud_mask:       np.ndarray   # (H, W) uint8      — 1=cloud/occlusion, 0=clear
+    optical:          np.ndarray   # (4, H, W) float32 - model input (optical bands)
+    sar:              np.ndarray   # (2, H, W) float32 - model input (SAR bands)
+    gt_mask:          np.ndarray   # (H, W) uint8      - ground truth (road=1, bg=0)
+    cloud_mask:       np.ndarray   # (H, W) uint8      - 1=cloud/occlusion, 0=clear
     occlusion_type:   str          # "none" | "cloud" | "canopy" | "shadow" | "all"
     occlusion_fraction: float      # fraction of tile that is occluded [0, 1]
     seed:             int
     bbox:             tuple        # (min_lon, min_lat, max_lon, max_lat)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 # MAIN GENERATOR CLASS
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 
 class SyntheticTileGenerator:
     """
@@ -179,11 +179,11 @@ class SyntheticTileGenerator:
         self.resolution_m     = resolution_m
         self.osmnx_cache_path = Path(osmnx_cache_path)
         self.road_width_px    = road_width_px
-        self.G                = None   # OSMnx graph — loaded on first use
+        self.G                = None   # OSMnx graph - loaded on first use
         self._gt_mask_cache   = None  # cached road mask (same for all tiles)
 
         print(f"[SyntheticTileGenerator] Initialized")
-        print(f"  Tile size:   {H}×{W} pixels")
+        print(f"  Tile size:   {H}x{W} pixels")
         print(f"  Resolution:  {resolution_m}m/pixel")
         print(f"  BBox:        {bbox}")
 
@@ -195,7 +195,7 @@ class SyntheticTileGenerator:
         otherwise download it from OpenStreetMap and save to cache.
 
         This function is idempotent: calling it multiple times is safe.
-        The cache means no internet is needed after the first run —
+        The cache means no internet is needed after the first run -
         critical for the offline demo at NRSC Hyderabad.
         """
         try:
@@ -293,7 +293,7 @@ class SyntheticTileGenerator:
                 # Shapely LineString → list of (lon, lat) tuples
                 coords = list(data['geometry'].coords)
             else:
-                # No geometry stored — straight line between nodes
+                # No geometry stored - straight line between nodes
                 u_node = self.G.nodes[u]
                 v_node = self.G.nodes[v]
                 coords = [
@@ -510,7 +510,7 @@ class SyntheticTileGenerator:
         1. Start with background spectral signature + low-frequency texture variation
         2. Paint vegetation pixels with vegetation spectral signature
         3. Paint building pixels (on top of vegetation if overlap)
-        4. Paint road pixels (on top of everything — roads are most definite)
+        4. Paint road pixels (on top of everything - roads are most definite)
         5. Add fine-grain per-pixel noise
 
         The layering order matters: roads win over buildings, buildings win over veg.
@@ -547,7 +547,7 @@ class SyntheticTileGenerator:
                 std = SPECTRAL_NOISE_STD['building'][b]
                 optical[b][bld_mask_b] = sig + std * bld_noise[b][bld_mask_b]
 
-        # Layer 4: Roads (overwrite everything — roads are the definite class)
+        # Layer 4: Roads (overwrite everything - roads are the definite class)
         if gt_mask.any():
             road_noise = rng.normal(0, 1, (4, H, W)).astype(np.float32)
             road_mask_b = gt_mask.astype(bool)
@@ -605,7 +605,7 @@ class SyntheticTileGenerator:
                 std = SAR_NOISE_STD['vegetation'][b]
                 sar[b][veg_mask_b] = sig + std * veg_noise[b][veg_mask_b]
 
-        # Buildings (double-bounce — very bright)
+        # Buildings (double-bounce - very bright)
         if buildings.any():
             bld_noise = rng.normal(0, 1, (2, H, W)).astype(np.float32)
             bld_mask_b = buildings.astype(bool)
@@ -614,7 +614,7 @@ class SyntheticTileGenerator:
                 std = SAR_NOISE_STD['building'][b]
                 sar[b][bld_mask_b] = sig + std * bld_noise[b][bld_mask_b]
 
-        # Roads (specular — very dark)
+        # Roads (specular - very dark)
         if gt_mask.any():
             road_noise = rng.normal(0, 1, (2, H, W)).astype(np.float32)
             road_mask_b = gt_mask.astype(bool)
@@ -651,7 +651,7 @@ class SyntheticTileGenerator:
         Physics:
         - Clouds are optically opaque → completely replace optical signal
         - Clouds have high reflectance across all bands (bright white appearance)
-        - Clouds are NOT visible in SAR — radar sees THROUGH cloud cover
+        - Clouds are NOT visible in SAR - radar sees THROUGH cloud cover
           (this is the primary motivation for SAR fusion in Part A)
 
         Implementation:
@@ -692,7 +692,7 @@ class SyntheticTileGenerator:
                 optical[b]
             )
 
-        # SAR is physically unaffected by clouds — intentionally return unchanged
+        # SAR is physically unaffected by clouds - intentionally return unchanged
         cloud_sar = sar.copy()
 
         actual_frac = float(cloud_mask.sum()) / total_px
@@ -712,7 +712,7 @@ class SyntheticTileGenerator:
         Physics:
         - Tree canopy in optical: replaces road pixel signature with vegetation signature
         - Tree canopy in SAR: partially attenuates signal (70% of original remains)
-          SAR penetrates thin vegetation partially — this is different from clouds.
+          SAR penetrates thin vegetation partially - this is different from clouds.
           Dense canopy can reduce SAR road contrast by 20-40%.
 
         Strategy:
@@ -794,8 +794,8 @@ class SyntheticTileGenerator:
         - SAR is unaffected by shadows (radar doesn't depend on illumination angle)
 
         Implementation note:
-        The shadow kernel is asymmetric — it extends LEFT only (westward shadows).
-        We use a horizontal strip kernel (1 row × 20 cols) and shift left.
+        The shadow kernel is asymmetric - it extends LEFT only (westward shadows).
+        We use a horizontal strip kernel (1 row x 20 cols) and shift left.
 
         Returns: shadowed_optical, unchanged_sar, shadow_mask
         """
@@ -805,7 +805,7 @@ class SyntheticTileGenerator:
             return optical.copy(), sar.copy(), np.zeros((H, W), dtype=np.uint8), 0.0
 
         # Shadow direction: westward (left in image for north-up orientation)
-        # Kernel: 1 row × 20 cols (elongated westward shadow)
+        # Kernel: 1 row x 20 cols (elongated westward shadow)
         shadow_length_px = max(5, int(30 * fraction))
         kernel = np.ones((1, shadow_length_px), dtype=np.uint8)
 
@@ -852,7 +852,7 @@ class SyntheticTileGenerator:
         Generate one complete synthetic tile.
 
         Args:
-            seed:               Random seed — controls texture, building placement,
+            seed:               Random seed - controls texture, building placement,
                                 vegetation placement, and occlusion patterns.
                                 Same seed → identical tile. Different seed → different tile.
             occlusion_type:     "none" | "cloud" | "canopy" | "shadow" | "all"
@@ -864,7 +864,7 @@ class SyntheticTileGenerator:
         Returns:
             SyntheticTile with optical, sar, gt_mask, cloud_mask fields.
 
-        Important: gt_mask is NEVER occluded — the ground truth always shows
+        Important: gt_mask is NEVER occluded - the ground truth always shows
         the true road locations. Occlusion only affects optical and sar.
         """
         rng = np.random.default_rng(seed)
@@ -935,9 +935,9 @@ class SyntheticTileGenerator:
         )
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 # VISUALIZATION
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 
 def visualize_tile(
     tile:        SyntheticTile,
@@ -945,7 +945,7 @@ def visualize_tile(
     title:       str = "Synthetic Koramangala Tile",
 ) -> None:
     """
-    Save a 2×3 matplotlib figure showing the tile's key components.
+    Save a 2x3 matplotlib figure showing the tile's key components.
 
     Layout:
         Row 1: [Optical false-color RGB] [Ground Truth mask] [SAR VV channel]
@@ -957,9 +957,9 @@ def visualize_tile(
     - If occlusion is applied, Row 2's right panel shows exactly what is occluded
 
     The optical false-color composite uses:
-        Red channel   → NIR band (index 2)   — vegetation appears bright red
-        Green channel → Red band (index 1)   — roads appear dark
-        Blue channel  → Green band (index 0) — water appears dark blue
+        Red channel   → NIR band (index 2)   - vegetation appears bright red
+        Green channel → Red band (index 1)   - roads appear dark
+        Blue channel  → Green band (index 0) - water appears dark blue
     This is a standard "false color" composite used in remote sensing.
     """
     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
@@ -1046,9 +1046,9 @@ def visualize_tile(
     print(f"  Visualization saved: {output_path}")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 # SAVE / DATASET FUNCTIONS
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 
 def save_tile_to_disk(
     tile:       SyntheticTile,
@@ -1173,12 +1173,12 @@ def save_demo_output(
 ) -> None:
     """
     Save the demo tile as the official Part A output:
-      - part_a_vision/outputs/road_mask.npy  (via output_writer — contract enforced)
-      - part_a_vision/outputs/meta.json      (via output_writer — contract enforced)
+      - part_a_vision/outputs/road_mask.npy  (via output_writer - contract enforced)
+      - part_a_vision/outputs/meta.json      (via output_writer - contract enforced)
 
     In Phase 2, road_mask.npy = the synthetic GT mask.
     From Phase 7 onwards, road_mask.npy = the model's predicted mask.
-    The format is identical — Part B doesn't care which source produced it.
+    The format is identical - Part B doesn't care which source produced it.
     """
     from shared.config import ROAD_MASK_PATH, META_PATH
 
@@ -1194,14 +1194,14 @@ def save_demo_output(
     load_and_verify(ROAD_MASK_PATH, META_PATH)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 # CLI ENTRY POINT
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Mega-Heracross Part A — Synthetic Tile Generator\n"
+            "Mega-Heracross Part A - Synthetic Tile Generator\n"
             "Generates realistic Koramangala satellite tiles for training and demo."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1241,10 +1241,10 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    print("\n╔══════════════════════════════════════════════════════╗")
-    print("║  Part A — Synthetic Tile Generator                   ║")
-    print("║  Koramangala, Bengaluru | Mega-Heracross BAH 2026   ║")
-    print("╚══════════════════════════════════════════════════════╝\n")
+    print("\n+------------------------------------------------------+")
+    print("|  Part A - Synthetic Tile Generator                   |")
+    print("|  Koramangala, Bengaluru | Mega-Heracross BAH 2026   |")
+    print("+------------------------------------------------------+\n")
 
     generator = SyntheticTileGenerator()
 
@@ -1263,7 +1263,7 @@ def main() -> None:
         print(f"\n  Tile statistics:")
         H_tile = tile.optical.shape[1]
         W_tile = tile.optical.shape[2]
-        print(f"    Shape:             {H_tile}×{W_tile} pixels")
+        print(f"    Shape:             {H_tile}x{W_tile} pixels")
         print(f"    Road pixels:       {road_px:,} ({road_px/(H_tile*W_tile)*100:.1f}%)")
         print(f"    Occluded pixels:   {occ_px:,} ({tile.occlusion_fraction*100:.1f}%)")
         print(f"    Optical range:     [{tile.optical.min():.3f}, {tile.optical.max():.3f}]")
@@ -1283,7 +1283,7 @@ def main() -> None:
         vis_path = str(_here / "outputs" / "demo_visuals" / "synthetic_overview.png")
         visualize_tile(
             tile, vis_path,
-            title=f"Synthetic Koramangala — {args.occlusion.upper()} occlusion"
+            title=f"Synthetic Koramangala - {args.occlusion.upper()} occlusion"
         )
 
         # Save additional occlusion-type visualizations for context
@@ -1295,7 +1295,7 @@ def main() -> None:
                 visualize_tile(
                     t2,
                     str(_here / "outputs" / "demo_visuals" / f"synthetic_{occ_t}.png"),
-                    title=f"Synthetic Koramangala — {occ_t.upper()} occlusion"
+                    title=f"Synthetic Koramangala - {occ_t.upper()} occlusion"
                 )
 
         print("\n✓ Demo complete.")

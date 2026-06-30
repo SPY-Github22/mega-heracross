@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Phase 7 — Task 5: Baseline Evaluation & Inference
+Phase 7 - Task 5: Baseline Evaluation & Inference
 ==================================================
 Loads the best trained DeepLabV3+ model, runs inference on the validation
 set, and computes detailed pixel-level and topology metrics:
@@ -80,7 +80,7 @@ def compute_skeleton(mask: np.ndarray) -> np.ndarray:
 
 def skeleton_iou(pred: np.ndarray, gt: np.ndarray) -> float:
     """
-    IoU of morphological skeletons — measures topological overlap.
+    IoU of morphological skeletons - measures topological overlap.
     Both inputs should be binary {0, 1} masks.
     """
     pred_skel = compute_skeleton(pred)
@@ -90,7 +90,7 @@ def skeleton_iou(pred: np.ndarray, gt: np.ndarray) -> float:
     union = (pred_skel | gt_skel).sum()
 
     if union == 0:
-        return 1.0  # both empty — perfect match
+        return 1.0  # both empty - perfect match
     return float(intersection) / float(union)
 
 
@@ -145,8 +145,8 @@ def compute_pixel_metrics(
 
     Parameters
     ----------
-    pred : (H, W) uint8 — binary prediction {0, 1}
-    gt : (H, W) uint8 — binary ground truth {0, 1}
+    pred : (H, W) uint8 - binary prediction {0, 1}
+    gt : (H, W) uint8 - binary ground truth {0, 1}
 
     Returns
     -------
@@ -388,7 +388,7 @@ def _aggregate(metrics_list: List[Dict[str, float]]) -> Dict[str, float]:
         agg[k] = np.mean(values)
         agg[f"{k}_std"] = np.std(values)
 
-    # CC ratio (pred / gt) — measures fragmentation
+    # CC ratio (pred / gt) - measures fragmentation
     cc_pred_vals = [m["cc_pred"] for m in metrics_list]
     cc_gt_vals = [m["cc_gt"] for m in metrics_list]
     agg["cc_ratio"] = np.mean([p / max(g, 1) for p, g in zip(cc_pred_vals, cc_gt_vals)])
@@ -445,18 +445,18 @@ def format_report(metrics: Dict[str, float]) -> str:
     lines.append("EVALUATION REPORT")
     lines.append("=" * 60)
     lines.append("")
-    lines.append("— Pixel-Level Metrics —")
+    lines.append("- Pixel-Level Metrics -")
     lines.append(f"  IoU (Jaccard)         : {metrics.get('iou', 0):.4f} ± {metrics.get('iou_std', 0):.4f}")
     lines.append(f"  Dice (F1)              : {metrics.get('dice', 0):.4f} ± {metrics.get('dice_std', 0):.4f}")
     lines.append(f"  Pixel Accuracy         : {metrics.get('pixel_acc', 0):.4f} ± {metrics.get('pixel_acc_std', 0):.4f}")
     lines.append(f"  Precision (road)       : {metrics.get('precision', 0):.4f} ± {metrics.get('precision_std', 0):.4f}")
     lines.append(f"  Recall (road)          : {metrics.get('recall', 0):.4f} ± {metrics.get('recall_std', 0):.4f}")
     lines.append("")
-    lines.append("— Width Breakdown —")
+    lines.append("- Width Breakdown -")
     lines.append(f"  Thin Road IoU (<3px)   : {metrics.get('thin_iou', 0):.4f} ± {metrics.get('thin_iou_std', 0):.4f}")
     lines.append(f"  Major Road IoU (>5px)  : {metrics.get('major_iou', 0):.4f} ± {metrics.get('major_iou_std', 0):.4f}")
     lines.append("")
-    lines.append("— Topology Metrics —")
+    lines.append("- Topology Metrics -")
     lines.append(f"  Skeleton IoU           : {metrics.get('skeleton_iou', 0):.4f} ± {metrics.get('skeleton_iou_std', 0):.4f}")
     lines.append(f"  Skeleton Precision     : {metrics.get('skeleton_precision', 0):.4f} ± {metrics.get('skeleton_precision_std', 0):.4f}")
     lines.append(f"  Skeleton Recall        : {metrics.get('skeleton_recall', 0):.4f} ± {metrics.get('skeleton_recall_std', 0):.4f}")
@@ -466,7 +466,7 @@ def format_report(metrics: Dict[str, float]) -> str:
     lines.append(f"  CC Ratio (pred/gt)     : {metrics.get('cc_ratio', 0):.4f} ± {metrics.get('cc_ratio_std', 0):.4f}")
     lines.append("")
     baseline_met = metrics.get('iou', 0) >= 0.30
-    lines.append(f"Baseline target (IoU > 0.30): {'✅ MET' if baseline_met else '⚠️  NOT MET'}")
+    lines.append(f"Baseline target (IoU > 0.30): {'✅ MET' if baseline_met else '[!]  NOT MET'}")
     lines.append("=" * 60)
     return "\n".join(lines)
 
@@ -477,7 +477,7 @@ def format_report(metrics: Dict[str, float]) -> str:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Phase 7/11 — Evaluate trained baseline/SegFormer"
+        description="Phase 7/11 - Evaluate trained baseline/SegFormer"
     )
     parser.add_argument("--backbone", type=str, default="segformer_b3", help="Model backbone")
     parser.add_argument("--checkpoint", type=str, required=True, help="Path to model checkpoint (.pth)")
@@ -495,12 +495,12 @@ def main():
     # Device
     device_str = args.device
     if device_str == "cuda" and not torch.cuda.is_available():
-        logger.warning("CUDA not available — using CPU")
+        logger.warning("CUDA not available - using CPU")
         device_str = "cpu"
 
     logger.info("Loading model from: %s", args.checkpoint)
     model = load_model(args.checkpoint, device=device_str, backbone=args.backbone)
-    logger.info("Model loaded — running on %s", device_str)
+    logger.info("Model loaded - running on %s", device_str)
 
     # Build validation dataloader
     from dataset import RoadDataset

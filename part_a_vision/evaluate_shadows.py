@@ -75,7 +75,7 @@ def main():
     if delta > 0.05:
         print("✅ Multi-temporal reasoning successfully mitigates shadow occlusion!")
     else:
-        print("⚠️ Temporal channels did not provide significant improvement.")
+        print("[!] Temporal channels did not provide significant improvement.")
     print("============================================================")
 
 if __name__ == "__main__":

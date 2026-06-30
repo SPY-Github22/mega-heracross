@@ -1,5 +1,5 @@
 # part_a_vision/__init__.py
-# Part A Vision Engine — entry point.
+# Part A Vision Engine - entry point.
 # This file runs when `from part_a_vision import ...` is called.
 # It confirms shared contracts are accessible and prints engine info.
 
@@ -34,11 +34,11 @@ except ImportError as e:
     ) from e
 
 # ── Engine banner ──────────────────────────────────────────────────────────────
-print("╔══════════════════════════════════════════════════════╗")
-print("║  Mega-Heracross — Part A: Vision & Occlusion Engine  ║")
-print("║  BAH 2026 · Problem Statement 4 · Route Resilience   ║")
-print("╚══════════════════════════════════════════════════════╝")
-print(f"  Contract : road_mask.npy (uint8, H×W, {{0,1}}) + meta.json")
+print("+------------------------------------------------------+")
+print("|  Mega-Heracross - Part A: Vision & Occlusion Engine  |")
+print("|  BAH 2026 · Problem Statement 4 · Route Resilience   |")
+print("+------------------------------------------------------+")
+print(f"  Contract : road_mask.npy (uint8, HxW, {{0,1}}) + meta.json")
 print(f"  CRS      : {TARGET_CRS}")
 print(f"  Test tile: Koramangala {TEST_TILE_BBOX}")
 print(f"  Output   : {ROAD_MASK_PATH}")

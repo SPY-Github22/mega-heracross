@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Phase 6 — Optical-SAR Fusion Module
+Phase 6 - Optical-SAR Fusion Module
 =====================================
 Early-fusion strategy: concatenate optical + SAR channels into a single
 multi-modal input tensor, with occlusion-aware weighting that adapts
@@ -16,7 +16,7 @@ Architecture Decision:
     EARLY FUSION (concatenate before backbone).  This is simpler, uses
     fewer parameters than late fusion (two backbones), and works well
     when modalities are spatially aligned.  The hard-coded occlusion
-    heuristic is a placeholder — Phase 13 replaces it with learned
+    heuristic is a placeholder - Phase 13 replaces it with learned
     dynamic weighting.
 
 Key Physics (for judge presentations):
@@ -217,7 +217,7 @@ class FusionModule:
         return tile
 
     # -----------------------------------------------------------------------
-    # Task 2 — Resolution alignment
+    # Task 2 - Resolution alignment
     # -----------------------------------------------------------------------
 
     def _align_resolutions(
@@ -233,11 +233,11 @@ class FusionModule:
         H_sar, W_sar = sar.shape[1], sar.shape[2]
 
         if (H_opt, W_opt) == (H_sar, W_sar):
-            logger.info("Resolutions already aligned: %d×%d", H_opt, W_opt)
+            logger.info("Resolutions already aligned: %dx%d", H_opt, W_opt)
             return optical, sar
 
         logger.info(
-            "Aligning resolutions: optical %d×%d ← SAR %d×%d",
+            "Aligning resolutions: optical %dx%d ← SAR %dx%d",
             H_opt, W_opt, H_sar, W_sar,
         )
 
@@ -251,7 +251,7 @@ class FusionModule:
                 )
             return optical, sar_aligned
         except ImportError:
-            logger.warning("cv2 not available — using scipy zoom fallback")
+            logger.warning("cv2 not available - using scipy zoom fallback")
             from scipy.ndimage import zoom
 
             zoom_factors = (1.0, H_opt / H_sar, W_opt / W_sar)
@@ -259,7 +259,7 @@ class FusionModule:
             return optical, sar_aligned.astype(np.float32)
 
     # -----------------------------------------------------------------------
-    # Task 3 helper — extract cloud fraction
+    # Task 3 helper - extract cloud fraction
     # -----------------------------------------------------------------------
 
     @staticmethod
@@ -274,7 +274,7 @@ class FusionModule:
         return 0.0
 
     # -----------------------------------------------------------------------
-    # Task 5 — Sanity check visualization
+    # Task 5 - Sanity check visualization
     # -----------------------------------------------------------------------
 
     def _save_debug_image(
@@ -296,12 +296,12 @@ class FusionModule:
             matplotlib.use("Agg")
             import matplotlib.pyplot as plt
         except ImportError:
-            logger.warning("matplotlib not available — skipping debug image")
+            logger.warning("matplotlib not available - skipping debug image")
             return
 
         fig, axes = plt.subplots(1, 3, figsize=(18, 6))
         fig.suptitle(
-            f"Fusion Debug — Optical: {tile.source_optical} | SAR: {tile.source_sar}\n"
+            f"Fusion Debug - Optical: {tile.source_optical} | SAR: {tile.source_sar}\n"
             f"Cloud: {tile.cloud_fraction:.1%} | "
             f"Optical suppressed: {tile.optical_suppressed} | "
             f"SAR weight: {tile.sar_weight_multiplier:.1f}x",
@@ -376,7 +376,7 @@ def fuse_optical_sar(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Phase 6 — Optical-SAR Fusion")
+    parser = argparse.ArgumentParser(description="Phase 6 - Optical-SAR Fusion")
     parser.add_argument("--target-size", type=int, default=512, help="Target spatial size (default: 512)")
     parser.add_argument("--cloud-threshold", type=float, default=CLOUD_SUPPRESSION_THRESHOLD,
                         help=f"Cloud fraction threshold for optical suppression (default: {CLOUD_SUPPRESSION_THRESHOLD})")
@@ -415,6 +415,6 @@ if __name__ == "__main__":
     print(f"  SAR source:      {tile.source_sar}")
 
     if tile.optical_suppressed:
-        print("\n  ⚠️  OPTICAL SUPPRESSED — SAR dominant (cloud > 50%)")
+        print("\n  [!]  OPTICAL SUPPRESSED - SAR dominant (cloud > 50%)")
 
     print("\n=== Phase 6 COMPLETE ===")

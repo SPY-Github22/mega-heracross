@@ -1,5 +1,5 @@
 """
-Phase 11 — SegFormer B3 Integration
+Phase 11 - SegFormer B3 Integration
 ====================================
 Centralized model factory routing between:
 1. SegFormer B3 (Primary architecture)
@@ -182,7 +182,7 @@ def build_deeplabv3plus(input_channels=6, num_classes=1, backbone="resnet50", pr
         )
         return model
     except ImportError:
-        logger.warning("segmentation-models-pytorch not available — falling back to torchvision DeepLabV3")
+        logger.warning("segmentation-models-pytorch not available - falling back to torchvision DeepLabV3")
 
     from torchvision.models.segmentation import deeplabv3_resnet50
     from torchvision.models.segmentation.deeplabv3 import DeepLabHead

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Phase 4 — Optical Preprocessing Pipeline
+Phase 4 - Optical Preprocessing Pipeline
 =========================================
 LISS-IV / Sentinel-2 GeoTIFF ingestion, band normalization,
 cloud masking, resize/padding, and synthetic fallback.
@@ -44,7 +44,7 @@ if not logger.handlers:
 # ---------------------------------------------------------------------------
 
 # Default bounding box for Bengaluru test tile (EPSG:4326)
-# Approximate Koramangala area — override via constructor
+# Approximate Koramangala area - override via constructor
 DEFAULT_BBOX: Tuple[float, float, float, float] = (
     77.6050,  # min_lon (west)
     12.9250,  # min_lat (south)
@@ -169,7 +169,7 @@ class OpticalPreprocessor:
 
         # ---- Task 5: synthetic fallback ----
         if path is None or not os.path.isfile(path):
-            logger.info("Real tile unavailable — using synthetic Koramangala tile")
+            logger.info("Real tile unavailable - using synthetic Koramangala tile")
             return self._synthetic_fallback(meta)
 
         # ---- Task 1: load GeoTIFF ----
@@ -208,7 +208,7 @@ class OpticalPreprocessor:
         return array.astype(np.float32), meta
 
     # -----------------------------------------------------------------------
-    # Task 1 — GeoTIFF reader
+    # Task 1 - GeoTIFF reader
     # -----------------------------------------------------------------------
 
     def _load_geotiff(self, path: str) -> Tuple[np.ndarray, dict]:
@@ -267,7 +267,7 @@ class OpticalPreprocessor:
                 # Fallback: if mask fails due to CRS mismatch, do manual crop
             except Exception:
                 logger.warning("rasterio.mask failed; proceeding with full extent")
-                # Keep full array — clipping skipped gracefully
+                # Keep full array - clipping skipped gracefully
 
         geo_meta["bbox"] = self.bbox
         # Ensure (C, H, W) layout
@@ -276,7 +276,7 @@ class OpticalPreprocessor:
         return array, geo_meta
 
     # -----------------------------------------------------------------------
-    # Task 2 — Band normalization
+    # Task 2 - Band normalization
     # -----------------------------------------------------------------------
 
     def _resolve_channel_stats(self, num_bands: int) -> Dict[int, Dict[str, float]]:
@@ -288,7 +288,7 @@ class OpticalPreprocessor:
         if num_bands == 4:
             return DEFAULT_CHANNEL_STATS
         # Generic fallback: compute stats from data
-        logger.info("No preset stats for %d bands — will compute from data", num_bands)
+        logger.info("No preset stats for %d bands - will compute from data", num_bands)
         return {}
 
     def _normalize_bands(
@@ -326,7 +326,7 @@ class OpticalPreprocessor:
         return out, used_stats
 
     # -----------------------------------------------------------------------
-    # Task 3 — Cloud mask generator
+    # Task 3 - Cloud mask generator
     # -----------------------------------------------------------------------
 
     def _generate_cloud_mask(
@@ -339,7 +339,7 @@ class OpticalPreprocessor:
         Simple brightness + spectral-flatness cloud detector.
 
         NOTE: This is a placeholder. Brightness-threshold cloud masking is
-        extremely naive — it will falsely flag bright urban features (concrete
+        extremely naive - it will falsely flag bright urban features (concrete
         roofs, bare soil) as cloud. Phase 13 will upgrade this to a learned
         cloud detector.
 
@@ -362,7 +362,7 @@ class OpticalPreprocessor:
         return cloud_mask, cloud_fraction
 
     # -----------------------------------------------------------------------
-    # Task 4 — Resize and padding
+    # Task 4 - Resize and padding
     # -----------------------------------------------------------------------
 
     def _resize_and_pad(
@@ -416,7 +416,7 @@ class OpticalPreprocessor:
         return array, pad_info
 
     # -----------------------------------------------------------------------
-    # Task 5 — Synthetic fallback
+    # Task 5 - Synthetic fallback
     # -----------------------------------------------------------------------
 
     def _synthetic_fallback(self, meta: PreprocessMeta) -> Tuple[np.ndarray, PreprocessMeta]:
@@ -442,10 +442,10 @@ class OpticalPreprocessor:
             )
             logger.info("Synthetic tile generated via synthetic_tile.py")
         except ImportError:
-            # Minimal procedural fallback — creates a (4, 512, 512) noise tile
+            # Minimal procedural fallback - creates a (4, 512, 512) noise tile
             # with a simple road-like cross pattern
             logger.warning(
-                "synthetic_tile.py not importable — using minimal procedural fallback"
+                "synthetic_tile.py not importable - using minimal procedural fallback"
             )
             size = self._target_size_snapped
             tile = np.random.RandomState(42).rand(4, size, size).astype(np.float32) * 0.2
@@ -505,7 +505,7 @@ def preprocess_optical(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Phase 4 — Optical Preprocessing Pipeline")
+    parser = argparse.ArgumentParser(description="Phase 4 - Optical Preprocessing Pipeline")
     parser.add_argument("input", nargs="?", default=None, help="Path to GeoTIFF file (omit for synthetic fallback)")
     parser.add_argument("--bbox", nargs=4, type=float, default=None, help="min_lon min_lat max_lon max_lat")
     parser.add_argument("--target-size", type=int, default=512, help="Target spatial size (default: 512)")

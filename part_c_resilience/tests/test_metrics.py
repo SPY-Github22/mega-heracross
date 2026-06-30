@@ -29,18 +29,18 @@ def build_star_graph_4():
 def test_global_efficiency_line():
     G = build_line_graph_3()
     E = global_efficiency(G)
-    assert abs(E - 0.4166667) < 1e-6
+    assert abs(E - 0.8333333) < 1e-6
 
 def test_global_efficiency_star():
     G = build_star_graph_4()
     E = global_efficiency(G)
-    assert abs(E - 0.375) < 1e-6
+    assert abs(E - 0.75) < 1e-6
 
 def test_approximate_efficiency_line():
     G = build_line_graph_3()
     pairs = sample_node_pairs(G, num_pairs=3, rng=np.random.default_rng(42))
     E_approx, sem = approximate_global_efficiency(G, pairs)
-    assert abs(E_approx - 0.4166667) < 1e-6
+    assert abs(E_approx - 0.8333333) < 1e-6
     assert sem < 1e-6
 
 def test_delay_penalty_and_norm_ri():

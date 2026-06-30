@@ -2,7 +2,7 @@
 # Contract-enforcing output writer for Part A.
 # This module is the ONLY place that writes road_mask.npy and meta.json.
 # It validates the contract on every write and re-validates on every load.
-# If the contract is violated, it raises a clear ValueError — never silently corrupts.
+# If the contract is violated, it raises a clear ValueError - never silently corrupts.
 
 import numpy as np
 import json
@@ -93,7 +93,7 @@ def _validate_meta(crs: str, bbox, resolution_m, source: str) -> None:
         raise ValueError(
             f"[output_writer] meta.bbox: min_lon must be < max_lon.\n"
             f"  Got: min_lon={min_lon}, max_lon={max_lon}\n"
-            f"  Fix: Check bbox order — it must be (min_lon, min_lat, max_lon, max_lat)"
+            f"  Fix: Check bbox order - it must be (min_lon, min_lat, max_lon, max_lat)"
         )
 
     if not (min_lat < max_lat):
@@ -161,7 +161,7 @@ def write_meta(
     Validate and save meta.json.
 
     Args:
-        crs:          coordinate reference system — must be "EPSG:4326"
+        crs:          coordinate reference system - must be "EPSG:4326"
         bbox:         (min_lon, min_lat, max_lon, max_lat) in EPSG:4326
         resolution_m: spatial resolution in metres per pixel
         source:       data source description

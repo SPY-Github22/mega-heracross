@@ -30,7 +30,7 @@ class DeepGlobeDataset(Dataset):
         self.use_fallback = not self.images_dir.exists()
         
         if self.use_fallback:
-            print(f"⚠️ [DeepGlobeDataset] Real dataset not found at {self.images_dir}. Using synthetic fallback.")
+            print(f"[!] [DeepGlobeDataset] Real dataset not found at {self.images_dir}. Using synthetic fallback.")
             self.num_samples = 100 if split == "train" else 20
         else:
             self.image_files = sorted(list(self.images_dir.glob("*_sat.jpg")))

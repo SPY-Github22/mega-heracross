@@ -69,9 +69,9 @@ def run_pipeline(mode="synthetic", occlusion="none", output_dir="outputs"):
             model.load_state_dict(state_dict)
             print("✓ Loaded pre-trained weights")
         except Exception as e:
-            print(f"⚠ Failed to load weights ({e}). Running with random weights.")
+            print(f"[!] Failed to load weights ({e}). Running with random weights.")
     else:
-        print("⚠ best_checkpoint.pth not found. Running with random weights for integration test.")
+        print("[!] best_checkpoint.pth not found. Running with random weights for integration test.")
         
     model.eval()
     

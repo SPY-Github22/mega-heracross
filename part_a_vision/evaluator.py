@@ -1,6 +1,6 @@
 # part_a_vision/evaluator.py
 #
-# Part A Evaluation Module — Mega-Heracross BAH 2026
+# Part A Evaluation Module - Mega-Heracross BAH 2026
 #
 # This module owns all measurement for Part A outputs.
 # It is imported by shared/eval.py and called by run_part_a.py (Phase 24).
@@ -27,7 +27,7 @@ from typing import Optional, Dict, Any
 import numpy as np
 from scipy.ndimage import label, sobel
 
-# Skimage for skeletonization — available from requirements.txt
+# Skimage for skeletonization - available from requirements.txt
 try:
     from skimage.morphology import thin as _skimage_thin
     _SKIMAGE_AVAILABLE = True
@@ -51,9 +51,9 @@ from part_a_vision.part_a_config import (
 )
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# SECTION 1 — CONTRACT VALIDATION
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
+# SECTION 1 - CONTRACT VALIDATION
+# ------------------------------------------------------------------------------
 
 def validate_contract(
     mask_path: str = ROAD_MASK_PATH,
@@ -163,9 +163,9 @@ def validate_contract(
     return {'mask': mask, 'meta': meta}
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# SECTION 2 — GROUND TRUTH LOADER
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
+# SECTION 2 - GROUND TRUTH LOADER
+# ------------------------------------------------------------------------------
 
 def load_gt_mask(
     meta:    Dict[str, Any],
@@ -176,13 +176,13 @@ def load_gt_mask(
 
     Priority order:
       1. Explicit gt_path argument (highest trust)
-      2. OSMNX_GT_MASK_PATH (generated in Phase 2 — always available)
+      2. OSMNX_GT_MASK_PATH (generated in Phase 2 - always available)
       3. Generate from OSMnx on the fly (slowest, but self-healing)
       4. Return None with warning (metrics will be skipped)
 
     In Phase 2 (synthetic mode):
         GT = OSMnx-rasterized road mask = same as road_mask.npy
-        Expected IoU = 1.0 (trivially perfect — no model involved yet)
+        Expected IoU = 1.0 (trivially perfect - no model involved yet)
         This is CORRECT behaviour: the GT mask IS the prediction in Phase 2.
 
     From Phase 7 onwards:
@@ -244,9 +244,9 @@ def _assert_valid_binary_mask(mask: np.ndarray, name: str) -> None:
         raise ValueError(f"[evaluator] {name} has values {unique}, expected {{0,1}}")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# SECTION 3 — PIXEL-LEVEL METRICS
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
+# SECTION 3 - PIXEL-LEVEL METRICS
+# ------------------------------------------------------------------------------
 
 def compute_metrics(
     pred: np.ndarray,
@@ -347,9 +347,9 @@ def compute_metrics(
     }
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# SECTION 4 — TOPOLOGY METRICS
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
+# SECTION 4 - TOPOLOGY METRICS
+# ------------------------------------------------------------------------------
 
 def count_connected_components(
     mask:        np.ndarray,
@@ -362,7 +362,7 @@ def count_connected_components(
         A road network's utility depends on it being one connected graph.
         100 isolated road segments is NOT a useful road network for routing.
         For disaster resilience analysis (Part C), a fragmented road network
-        has artificially high "criticality" for every node — misleading results.
+        has artificially high "criticality" for every node - misleading results.
 
     We use 4-connectivity (up/down/left/right only, not diagonal).
     Why not 8-connectivity?
@@ -372,7 +372,7 @@ def count_connected_components(
 
     We filter out components smaller than min_area_px pixels.
     Why?
-        Small isolated components are model noise — single misclassified pixels.
+        Small isolated components are model noise - single misclassified pixels.
         Including them in the CC count makes the metric noisy and misleading.
 
     Returns dict with:
@@ -450,7 +450,7 @@ def compute_skeleton_iou(
 
     Expected range: typically 0.5–0.9, always lower than pixel IoU.
     If Skeleton IoU is much lower than pixel IoU, the model finds road AREA
-    but misses road CONTINUITY — common failure mode.
+    but misses road CONTINUITY - common failure mode.
 
     Returns:
         float in [0,1], or NaN if skimage is unavailable or GT is empty.
@@ -527,9 +527,9 @@ def compute_edge_f1(
     return result['f1']
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# SECTION 5 — ORCHESTRATOR
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
+# SECTION 5 - ORCHESTRATOR
+# ------------------------------------------------------------------------------
 
 def build_eval_result(
     mask_path: str = ROAD_MASK_PATH,
@@ -638,9 +638,9 @@ def build_eval_result(
     return result
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# SECTION 6 — REPORTING
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
+# SECTION 6 - REPORTING
+# ------------------------------------------------------------------------------
 
 def _fmt(val: Any, decimals: int = 3, width: int = 8) -> str:
     """Format a metric value for the report. Handles NaN cleanly."""
@@ -662,9 +662,9 @@ def print_judge_report(result: Dict[str, Any]) -> None:
         - Uncertainty fraction (Phase 19 will populate this)
 
     This output is what the ISRO judge sees when Part A runs at the finale.
-    Every field has an explanation available — know what each one means.
+    Every field has an explanation available - know what each one means.
     """
-    sep  = "═" * 60
+    sep  = "-" * 60
     dash = "─" * 60
 
     bbox  = result.get('bbox', [])
@@ -679,7 +679,7 @@ def print_judge_report(result: Dict[str, Any]) -> None:
 
     lines = [
         f"\n{sep}",
-        f"  MEGA-HERACROSS Part A — Koramangala Vision Report",
+        f"  MEGA-HERACROSS Part A - Koramangala Vision Report",
         f"{sep}",
         f"  Tile:          {bbox_str}",
         f"  Source:        {result.get('source','?')} "

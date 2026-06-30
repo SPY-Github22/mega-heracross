@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Phase 7 — Task 3 & 4: DeepLabV3+ Baseline Training Loop
+Phase 7 - Task 3 & 4: DeepLabV3+ Baseline Training Loop
 ========================================================
 Trains a DeepLabV3+ (ResNet-50 backbone, 6 input channels) on synthetic
 Koramangala fused optical-SAR tiles.
@@ -249,7 +249,7 @@ class Trainer:
         Returns final validation metrics.
         """
         logger.info(
-            "Training on %s for %d epochs — %d train batches, %d val batches",
+            "Training on %s for %d epochs - %d train batches, %d val batches",
             self.device, self.epochs,
             len(self.train_loader), len(self.val_loader),
         )
@@ -315,12 +315,12 @@ class Trainer:
 
         # Final report
         logger.info("=" * 60)
-        logger.info("Training complete — %d epochs", self.epochs)
+        logger.info("Training complete - %d epochs", self.epochs)
         logger.info("Best IoU: %.4f (epoch %d)", self.best_val_iou, self.best_epoch)
         if self.best_val_iou >= TARGET_IOU:
             logger.info("✅ Baseline target met (IoU > %.2f)", TARGET_IOU)
         else:
-            logger.info("⚠️  Below baseline target (IoU < %.2f) — review loss / data", TARGET_IOU)  # noqa
+            logger.info("[!]  Below baseline target (IoU < %.2f) - review loss / data", TARGET_IOU)  # noqa
         logger.info("Metrics saved to: %s", self.csv_path)
         logger.info("=" * 60)
 
@@ -449,7 +449,7 @@ class Trainer:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Phase 7/11 — Baseline/SegFormer Training on Synthetic Tiles"
+        description="Phase 7/11 - Baseline/SegFormer Training on Synthetic Tiles"
     )
     parser.add_argument("--backbone", type=str, default="segformer_b3", help="Model backbone")
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE, help="Batch size")
@@ -469,11 +469,11 @@ def main():
     # Device check
     device_str = args.device
     if device_str == "cuda" and not torch.cuda.is_available():
-        logger.warning("CUDA not available — falling back to CPU")
+        logger.warning("CUDA not available - falling back to CPU")
         device_str = "cpu"
 
     logger.info("=" * 60)
-    logger.info("Phase 7 — DeepLabV3+ Baseline Training")
+    logger.info("Phase 7 - DeepLabV3+ Baseline Training")
     logger.info("  Batch size: %d", args.batch_size)
     logger.info("  Epochs: %d", args.epochs)
     logger.info("  LR: %.1e, Weight Decay: %.1e", args.lr, args.weight_decay)
