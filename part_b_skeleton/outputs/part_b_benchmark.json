@@ -1,0 +1,63 @@
+{
+  "timestamp": "2026-06-30T03:33:47.557778+00:00",
+  "system": {
+    "python_version": "3.12.3",
+    "platform": "Linux-6.18.5-x86_64-with-glibc2.39",
+    "cpu_count": 1
+  },
+  "hyperparameters": {
+    "TARGET_CRS": "EPSG:4326",
+    "COLLAPSE_THRESHOLD": 0.5,
+    "TEST_TILE_BBOX": [
+      77.6101,
+      12.9177,
+      77.6401,
+      12.9377
+    ],
+    "GRAPH_SOURCE": "part_b",
+    "n_removals_fragility": 50,
+    "n_boot_ci": 100,
+    "lcc_threshold": 0.8,
+    "snap_m_base": "resolution_aware",
+    "spline_healing": true,
+    "sar_guided": true
+  },
+  "input_hashes": {
+    "road_mask_npy": "FILE_NOT_FOUND",
+    "meta_json": "FILE_NOT_FOUND"
+  },
+  "output_hash": "7056cc2a7296efaf",
+  "metrics": {
+    "contract_status": "PASS",
+    "node_count": 25,
+    "edge_count": 26,
+    "lcc_pct": 1.0,
+    "node_f1": 0.12,
+    "edge_f1": 0.0,
+    "total_length_km": 15.747,
+    "source": "synthetic",
+    "resolution_m": 13.7,
+    "fragility_auc": 0.9431,
+    "node_f1_ci": [
+      0.12,
+      0.12
+    ],
+    "edge_f1_ci": [
+      0.0,
+      0.0
+    ]
+  },
+  "timings_ms": {
+    "loader": 0.2,
+    "skeletonize": 3.5,
+    "graph_build": 2370.1,
+    "healing": 1.4,
+    "simplify": 4.2,
+    "weight_audit": 5.7,
+    "classify": 5.6,
+    "fragility": 4.4,
+    "bootstrap": 3.0
+  },
+  "total_runtime_s": 2.43,
+  "passes_30s_target": true
+}

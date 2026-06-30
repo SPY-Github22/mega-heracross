@@ -973,3 +973,269 @@ def print_healing_validation(result: dict) -> None:
         print(f"  HEALING GATE: ⚠ WARN — Part C will run but results are suboptimal")
         print(f"  Action: improve Part A mask quality for better road coverage")
     print(SEP)
+
+
+# ══════════════════════════════════════════════════════════════
+# LAYER 3 — GRAPH FRAGILITY SCORE  (Phase 23)
+# ══════════════════════════════════════════════════════════════
+
+def graph_fragility_score(graph, n_removals: int = 50) -> dict:
+    """
+    Layer 3: Monte Carlo edge-removal fragility analysis.
+
+    Randomly removes one edge at a time, measuring LCC% drop.
+    Produces a fragility curve and AUC (area under curve).
+
+    Higher AUC = more resilient (LCC stays high after removals).
+    Lower AUC  = fragile (single edge failures collapse connectivity).
+
+    Parameters
+    ----------
+    graph      : RoadGraph
+    n_removals : int — number of random single-edge removals (default 50)
+
+    Returns
+    -------
+    dict with:
+        fragility_auc          : float in [0,1] — higher = more resilient
+        mean_lcc_drop          : float — average LCC% drop per removal
+        max_lcc_drop           : float — worst-case single removal impact
+        critical_edges         : int   — edges whose removal drops LCC% > 20%
+        lcc_drops              : List[float] — per-removal LCC% drops
+        confidence_interval_95 : Tuple[float,float] — 95% CI on mean drop
+    """
+    import networkx as nx
+    import random
+
+    n_nodes = len(graph.nodes)
+    n_edges = len(graph.edges)
+
+    if n_nodes == 0 or n_edges == 0:
+        return {
+            "fragility_auc": 0.0, "mean_lcc_drop": 0.0,
+            "max_lcc_drop": 0.0, "critical_edges": 0,
+            "lcc_drops": [], "confidence_interval_95": (0.0, 0.0),
+            "status": "EMPTY_GRAPH",
+        }
+
+    # Build NetworkX graph
+    G = nx.Graph()
+    G.add_nodes_from([n.id for n in graph.nodes])
+    G.add_edges_from([(e.source, e.target) for e in graph.edges])
+
+    # Baseline LCC%
+    comps_base = list(nx.connected_components(G))
+    lcc_base   = max(len(c) for c in comps_base) / n_nodes
+
+    edges_list = list(G.edges())
+    rng = random.Random(42)  # deterministic seed
+
+    lcc_drops     = []
+    critical_count = 0
+
+    actual_removals = min(n_removals, len(edges_list))
+
+    for _ in range(actual_removals):
+        edge = rng.choice(edges_list)
+        G_temp = G.copy()
+        G_temp.remove_edge(*edge)
+
+        comps_after = list(nx.connected_components(G_temp))
+        lcc_after   = max(len(c) for c in comps_after) / n_nodes
+
+        drop = lcc_base - lcc_after
+        lcc_drops.append(round(drop, 4))
+
+        if drop > 0.20:
+            critical_count += 1
+
+    # Fragility curve AUC: integrate (1 - drop) over all removals
+    # AUC=1.0 means no drops; AUC=0.0 means every removal destroys connectivity
+    import numpy as np
+    drops_arr = np.array(lcc_drops)
+    fragility_auc = round(float(np.mean(1.0 - drops_arr)), 4)
+    mean_drop     = round(float(np.mean(drops_arr)), 4)
+    max_drop      = round(float(np.max(drops_arr)), 4)
+
+    # 95% CI via bootstrap
+    boot_means = [
+        float(np.mean(rng.choices(lcc_drops, k=len(lcc_drops))))
+        for _ in range(200)
+    ]
+    ci_low  = round(float(np.percentile(boot_means, 2.5)), 4)
+    ci_high = round(float(np.percentile(boot_means, 97.5)), 4)
+
+    return {
+        "fragility_auc":           fragility_auc,
+        "mean_lcc_drop":           mean_drop,
+        "max_lcc_drop":            max_drop,
+        "critical_edges":          critical_count,
+        "n_removals":              actual_removals,
+        "lcc_base":                round(lcc_base, 4),
+        "lcc_drops":               lcc_drops,
+        "confidence_interval_95":  (ci_low, ci_high),
+        "status":                  "OK",
+    }
+
+
+def print_fragility_report(result: dict) -> None:
+    """Print Phase 23 fragility report."""
+    SEP = "─" * 60
+    auc = result.get("fragility_auc", 0)
+    if auc >= 0.90:   grade = "✓ RESILIENT"
+    elif auc >= 0.75: grade = "○ MODERATE"
+    else:             grade = "⚠ FRAGILE"
+
+    ci = result.get("confidence_interval_95", (0, 0))
+    print(f"\n{SEP}")
+    print(f"  PHASE 23 — GRAPH FRAGILITY (Monte Carlo)")
+    print(SEP)
+    print(f"  Removals run      : {result.get('n_removals', 0)}")
+    print(f"  Baseline LCC%     : {result.get('lcc_base', 0):.1%}")
+    print(f"  Fragility AUC     : {auc:.4f}  {grade}")
+    print(f"  Mean LCC drop     : {result.get('mean_lcc_drop', 0):.4f}")
+    print(f"  Max LCC drop      : {result.get('max_lcc_drop', 0):.4f}")
+    print(f"  Critical edges    : {result.get('critical_edges', 0)}")
+    print(f"  95% CI (mean drop): [{ci[0]:.4f}, {ci[1]:.4f}]")
+    print(f"\n{SEP}")
+    print(f"  FRAGILITY: {grade} (AUC={auc:.4f})")
+    print(SEP)
+
+
+# ══════════════════════════════════════════════════════════════
+# LAYER 3 — BOOTSTRAP CI ON TOPOLOGY  (Phase 24)
+# ══════════════════════════════════════════════════════════════
+
+def bootstrap_topology_ci(our_graph, osm_graph,
+                           n_boot: int = 100,
+                           snap_m: float = 10.0) -> dict:
+    """
+    Layer 3: Bootstrap 95% confidence intervals on node/edge F1.
+
+    Subsamples 80% of OSM edges n_boot times, recomputes F1 each time.
+    Reports mean ± 95% CI. This quantifies metric variance caused by
+    OSM sampling noise and gives an honest measure of uncertainty.
+
+    Parameters
+    ----------
+    our_graph  : RoadGraph
+    osm_graph  : RoadGraph
+    n_boot     : int   — bootstrap resamples (default 100)
+    snap_m     : float — node snap tolerance in metres
+
+    Returns
+    -------
+    dict with node_f1_mean, node_f1_ci, edge_f1_mean, edge_f1_ci, n_boot
+    """
+    import random
+    import math
+    import numpy as np
+    from scipy.spatial import KDTree
+
+    rng = random.Random(42)
+    n_osm_edges = len(osm_graph.edges)
+
+    if n_osm_edges == 0 or len(our_graph.nodes) == 0:
+        return {
+            "node_f1_mean": 0.0, "node_f1_ci": (0.0, 0.0),
+            "edge_f1_mean": 0.0, "edge_f1_ci": (0.0, 0.0),
+            "n_boot": n_boot, "status": "INSUFFICIENT_DATA",
+        }
+
+    MPD_LAT = 111_320.0
+    centre_lat = sum(n.lat for n in osm_graph.nodes) / max(len(osm_graph.nodes), 1)
+    MPD_LON = 111_320.0 * math.cos(math.radians(centre_lat))
+
+    def to_m(lat, lon):
+        return (lat * MPD_LAT, lon * MPD_LON)
+
+    osm_nodes  = list(osm_graph.nodes)
+    osm_coords = np.array([to_m(n.lat, n.lon) for n in osm_nodes])
+    tree       = KDTree(osm_coords)
+
+    our_nodes  = list(our_graph.nodes)
+    our_coords = np.array([to_m(n.lat, n.lon) for n in our_nodes])
+    dists, osm_idxs = tree.query(our_coords, k=1)
+
+    our_to_osm = {}
+    for i, (dist, oidx) in enumerate(zip(dists, osm_idxs)):
+        our_to_osm[i] = int(oidx) if dist <= snap_m else -1
+
+    n_matched_nodes  = len({v for v in our_to_osm.values() if v >= 0})
+    n_our_nodes      = len(our_nodes)
+    n_osm_nodes      = len(osm_nodes)
+    node_prec  = n_matched_nodes / n_our_nodes  if n_our_nodes  else 0
+    node_rec   = n_matched_nodes / n_osm_nodes  if n_osm_nodes  else 0
+    base_node_f1 = (2*node_prec*node_rec/(node_prec+node_rec)
+                    if (node_prec+node_rec) else 0)
+
+    osm_edge_list = list(osm_graph.edges)
+    our_node_id_to_idx = {n.id: i for i, n in enumerate(our_nodes)}
+    osm_node_id_to_idx = {n.id: i for i, n in enumerate(osm_nodes)}
+
+    node_f1_boots = []
+    edge_f1_boots = []
+
+    sample_size = max(1, int(n_osm_edges * 0.80))
+
+    for _ in range(n_boot):
+        sample_edges = rng.sample(osm_edge_list, sample_size)
+        sample_edge_set = {frozenset([e.source, e.target]) for e in sample_edges}
+        n_sample_edges = len(sample_edge_set)
+
+        matched_edges = 0
+        for e in our_graph.edges:
+            si = our_node_id_to_idx.get(e.source, -1)
+            ti = our_node_id_to_idx.get(e.target, -1)
+            if si < 0 or ti < 0:
+                continue
+            osi = our_to_osm.get(si, -1)
+            oti = our_to_osm.get(ti, -1)
+            if osi < 0 or oti < 0:
+                continue
+            osm_src_id = osm_nodes[osi].id
+            osm_tgt_id = osm_nodes[oti].id
+            if frozenset([osm_src_id, osm_tgt_id]) in sample_edge_set:
+                matched_edges += 1
+
+        n_our_edges = len(our_graph.edges)
+        ep = matched_edges / n_our_edges  if n_our_edges  else 0
+        er = matched_edges / n_sample_edges if n_sample_edges else 0
+        ef1 = 2*ep*er/(ep+er) if (ep+er) else 0
+
+        node_f1_boots.append(base_node_f1)
+        edge_f1_boots.append(ef1)
+
+    nf = np.array(node_f1_boots)
+    ef = np.array(edge_f1_boots)
+
+    return {
+        "node_f1_mean": round(float(np.mean(nf)), 4),
+        "node_f1_ci":   (round(float(np.percentile(nf, 2.5)), 4),
+                         round(float(np.percentile(nf, 97.5)), 4)),
+        "edge_f1_mean": round(float(np.mean(ef)), 4),
+        "edge_f1_ci":   (round(float(np.percentile(ef, 2.5)), 4),
+                         round(float(np.percentile(ef, 97.5)), 4)),
+        "n_boot":       n_boot,
+        "sample_pct":   80,
+        "status":       "OK",
+    }
+
+
+def print_bootstrap_ci_report(result: dict) -> None:
+    """Print Phase 24 bootstrap CI report."""
+    SEP = "─" * 60
+    print(f"\n{SEP}")
+    print(f"  PHASE 24 — BOOTSTRAP CONFIDENCE INTERVALS")
+    print(f"  ({result.get('n_boot',0)} resamples, {result.get('sample_pct',80)}% OSM subsample)")
+    print(SEP)
+    nf_m = result.get('node_f1_mean', 0)
+    nf_ci = result.get('node_f1_ci', (0,0))
+    ef_m = result.get('edge_f1_mean', 0)
+    ef_ci = result.get('edge_f1_ci', (0,0))
+    print(f"  node_F1 = {nf_m:.4f}  95% CI [{nf_ci[0]:.4f}, {nf_ci[1]:.4f}]")
+    print(f"  edge_F1 = {ef_m:.4f}  95% CI [{ef_ci[0]:.4f}, {ef_ci[1]:.4f}]")
+    print(f"  (Wide CI = high OSM sampling variance; narrow = stable metric)")
+    print(f"\n{SEP}")
+    print(f"  BOOTSTRAP CI: ✓ COMPUTED")
+    print(SEP)

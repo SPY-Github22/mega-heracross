@@ -37,6 +37,10 @@ PHASE TRACKER (update as phases complete)
     Phase 19 ✓  End-to-end integration test
     Phase 20 ✓  Bearing-aware spline healing
     Phase 21 ✓  SAR-guided occlusion map integration
+    Phase 22 ✓  Road type classification
+    Phase 23 ✓  Monte Carlo fragility score
+    Phase 24 ✓  Bootstrap confidence intervals
+    Phase 25 ✓  Full pipeline benchmark + reproducibility report
     ...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
@@ -61,7 +65,9 @@ from shared.eval import (validate_graph_contract, print_contract_result,
                          graph_topology_f1, print_topology_f1_result,
                          connectivity_report, print_connectivity_report,
                          print_judge_report, healing_validation,
-                         print_healing_validation)
+                         print_healing_validation,
+                         graph_fragility_score, print_fragility_report,
+                         bootstrap_topology_ci, print_bootstrap_ci_report)
 from part_b_skeleton.loader import load_inputs, print_loader_report
 from part_b_skeleton.skeletonize import run_skeletonization
 from part_b_skeleton.graph_builder import build_and_save_graph
@@ -75,6 +81,8 @@ from part_b_skeleton.tests.test_integration import run_and_report as run_integra
 from part_b_skeleton.sar_integration import (
     run_sar_integration, sar_guided_heal, print_sar_report
 )
+from part_b_skeleton.classifier import run_classification
+from part_b_skeleton.benchmark import run_benchmark, print_benchmark_report, StageTimer
 from shared.config import (
     TARGET_CRS,
     COLLAPSE_THRESHOLD,
@@ -257,6 +265,7 @@ def print_phase01_report(
 
 def main():
     t0 = time.perf_counter()
+    timings_ms = {}   # Phase 25: per-stage benchmark timings
 
     print("Part B — Skeletonization & Topological Healing Engine")
     print("Mega-Heracross | ISRO Bharatiya Antariksh Hackathon 2026")
@@ -297,20 +306,23 @@ def main():
         # ── Phase 03: mask loader + geo-transform ─────────────────────────────
         mask_path = os.path.join(_REPO_ROOT, ROAD_MASK_PATH)
         meta_path = os.path.join(_REPO_ROOT, META_PATH)
-        mask, meta, affine = load_inputs(
-            mask_path, meta_path, use_synthetic_fallback=True
-        )
-        loader_metrics = print_loader_report(mask, meta, affine)
+        with StageTimer("loader", timings_ms):
+            mask, meta, affine = load_inputs(
+                mask_path, meta_path, use_synthetic_fallback=True
+            )
+            loader_metrics = print_loader_report(mask, meta, affine)
 
         # ── Phase 04: Zhang-Suen skeletonization ──────────────────────────────
-        skeleton, skel_metrics, skel_violations = run_skeletonization(
-            mask, resolution_m=meta.resolution_m
-        )
+        with StageTimer("skeletonize", timings_ms):
+            skeleton, skel_metrics, skel_violations = run_skeletonization(
+                mask, resolution_m=meta.resolution_m
+            )
 
         # ── Phase 05: sknw graph extraction + RoadGraph emission ──────────────
-        road_graph, graph_stats, graph_violations = build_and_save_graph(
-            skeleton, affine, graph_json_path
-        )
+        with StageTimer("graph_build", timings_ms):
+            road_graph, graph_stats, graph_violations = build_and_save_graph(
+                skeleton, affine, graph_json_path
+            )
 
     # ── Phase 18: resolution-aware config ────────────────────────────────────
     res_cfg = make_config(meta.resolution_m, source=meta.source)
@@ -331,30 +343,31 @@ def main():
     # ── Phases 10–12/20: topological healing ──────────────────────────────────
     # If SAR occlusion map available, use SAR-guided healing (Phase 21)
     # Otherwise fall back to standard spline healing (Phase 20)
-    if occlusion_map is not None and occlusion_map.any():
-        from part_b_skeleton.healer import detect_breaks
-        break_pairs, detect_metrics = detect_breaks(
-            road_graph, snap_m=res_cfg.snap_m
-        )
-        healed_graph, heal_metrics = sar_guided_heal(
-            road_graph, break_pairs, occlusion_map, affine,
-            snap_m=res_cfg.snap_m, lcc_target=0.80,
-        )
-        print_sar_report(sar_metrics, heal_metrics=heal_metrics,
-                         sar_available=sar_available)
-        # Run pruning after SAR-guided healing
-        from part_b_skeleton.healer import prune_stubs, print_pruning_report
-        healed_graph, prune_metrics = prune_stubs(
-            healed_graph, resolution_m=res_cfg.effective_resolution_m
-        )
-        print_pruning_report(prune_metrics)
-    else:
-        healed_graph, heal_metrics = run_healing(
-            road_graph,
-            snap_m=res_cfg.snap_m,
-            lcc_target=0.80,
-            resolution_m=res_cfg.effective_resolution_m,
-        )
+    with StageTimer("healing", timings_ms):
+        if occlusion_map is not None and occlusion_map.any():
+            from part_b_skeleton.healer import detect_breaks
+            break_pairs, detect_metrics = detect_breaks(
+                road_graph, snap_m=res_cfg.snap_m
+            )
+            healed_graph, heal_metrics = sar_guided_heal(
+                road_graph, break_pairs, occlusion_map, affine,
+                snap_m=res_cfg.snap_m, lcc_target=0.80,
+            )
+            print_sar_report(sar_metrics, heal_metrics=heal_metrics,
+                             sar_available=sar_available)
+            # Run pruning after SAR-guided healing
+            from part_b_skeleton.healer import prune_stubs, print_pruning_report
+            healed_graph, prune_metrics = prune_stubs(
+                healed_graph, resolution_m=res_cfg.effective_resolution_m
+            )
+            print_pruning_report(prune_metrics)
+        else:
+            healed_graph, heal_metrics = run_healing(
+                road_graph,
+                snap_m=res_cfg.snap_m,
+                lcc_target=0.80,
+                resolution_m=res_cfg.effective_resolution_m,
+            )
 
     # Re-save healed graph as the final graph.json (replaces raw extraction)
     from part_b_skeleton.graph_builder import save_graph_json, compute_graph_stats
@@ -362,9 +375,10 @@ def main():
     graph_stats = compute_graph_stats(healed_graph)
 
     # ── Phase 14: degree-2 node collapse ──────────────────────────────────────
-    simplified_graph, simp_metrics = run_simplification(healed_graph)
-    save_graph_json(simplified_graph, graph_json_path)
-    graph_stats = compute_graph_stats(simplified_graph)
+    with StageTimer("simplify", timings_ms):
+        simplified_graph, simp_metrics = run_simplification(healed_graph)
+        save_graph_json(simplified_graph, graph_json_path)
+        graph_stats = compute_graph_stats(simplified_graph)
 
     # ── Phase 15: healing quality validation + LCC gate ───────────────────────
     val_result = healing_validation(
@@ -384,9 +398,20 @@ def main():
         final_graph = simplified_graph
 
     # ── Phase 16: Haversine weight audit ─────────────────────────────────────
-    final_graph, weight_metrics = run_weight_audit(final_graph)
-    save_graph_json(final_graph, graph_json_path)
-    graph_stats = compute_graph_stats(final_graph)
+    with StageTimer("weight_audit", timings_ms):
+        final_graph, weight_metrics = run_weight_audit(final_graph)
+        save_graph_json(final_graph, graph_json_path)
+        graph_stats = compute_graph_stats(final_graph)
+
+    # ── Phase 22: Road type classification ───────────────────────────────────
+    with StageTimer("classify", timings_ms):
+        output_dir = os.path.join(_HERE, "outputs")
+        road_types, class_metrics = run_classification(final_graph, output_dir)
+
+    # ── Phase 23: Monte Carlo fragility score ────────────────────────────────
+    with StageTimer("fragility", timings_ms):
+        frag_result = graph_fragility_score(final_graph, n_removals=50)
+        print_fragility_report(frag_result)
 
     # ── Phase 02: contract validation (re-run on freshly written graph.json) ──
     contract_result = validate_graph_contract(graph_json_path)
@@ -394,6 +419,11 @@ def main():
 
     # ── Phase 06: OSM ground truth download ───────────────────────────────────
     osm_graph, osm_stats = load_or_download_osm()
+
+    # ── Phase 24: bootstrap confidence intervals ──────────────────────────────
+    with StageTimer("bootstrap", timings_ms):
+        boot_result = bootstrap_topology_ci(final_graph, osm_graph, n_boot=100)
+        print_bootstrap_ci_report(boot_result)
 
     # ── Phase 07: topology F1 vs OSM ground truth ─────────────────────────────
     f1_result = graph_topology_f1(final_graph, osm_graph, snap_m=10.0)
@@ -439,11 +469,38 @@ def main():
         "healed_edges":    heal_metrics.get("healed_edges", 0),
         "lcc_before":      heal_metrics.get("lcc_before", 0),
         "lcc_after":       heal_metrics.get("lcc_after", 0),
+        # Road types (Phase 22)
+        "pct_highway":     class_metrics.get("pct_highway", 0),
+        "pct_arterial":    class_metrics.get("pct_arterial", 0),
+        "pct_local":       class_metrics.get("pct_local", 0),
     }
     print_judge_report(judge_metrics)
 
     # ── Phase 19: end-to-end integration test ────────────────────────────────
     integration_passed = run_integration_test(verbose=False)
+
+    # ── Phase 25: full pipeline benchmark + reproducibility report ───────────
+    total_runtime_s = time.perf_counter() - t0
+
+    benchmark_metrics = dict(judge_metrics)
+    benchmark_metrics.update({
+        "fragility_auc":  frag_result.get("fragility_auc", 0),
+        "node_f1_ci":     list(boot_result.get("node_f1_ci", (0, 0))),
+        "edge_f1_ci":     list(boot_result.get("edge_f1_ci", (0, 0))),
+        "timings_ms":     timings_ms,
+        "total_runtime_s": round(total_runtime_s, 2),
+    })
+
+    mask_path_for_hash = os.path.join(_REPO_ROOT, ROAD_MASK_PATH)
+    meta_path_for_hash = os.path.join(_REPO_ROOT, META_PATH)
+    benchmark_output_path = os.path.join(_HERE, "outputs", "part_b_benchmark.json")
+
+    benchmark = run_benchmark(
+        mask_path_for_hash, meta_path_for_hash,
+        graph_json_path, benchmark_metrics,
+        benchmark_output_path,
+    )
+    print_benchmark_report(benchmark)
 
     # Exit with non-zero status if any violation found
     # so CI/CD pipelines can catch scaffold failures
