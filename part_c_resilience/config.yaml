@@ -1,0 +1,15 @@
+city_name: "Koramangala, Bengaluru"
+bbox: [77.6101, 12.9177, 77.6401, 12.9377]
+collapse_threshold: 0.50
+monte_carlo_scenarios: 100
+monte_carlo_k: 5
+cascading_scenarios: 20
+cascading_radius_m: 200
+cascading_correlation_prob: 0.8
+random_seed: 42
+graph_source: "part_b"
+output_dir: "part_c_resilience/outputs"
+road_mask_path: "part_a_vision/outputs/road_mask.npy"
+meta_path: "part_a_vision/outputs/meta.json"
+graph_path: "part_b_skeleton/outputs/graph.json"
+heatmap_path: "part_c_resilience/outputs/disaster_heatmap.html"
