@@ -430,22 +430,25 @@ class OpticalPreprocessor:
         meta.bbox = self.bbox
 
         # Try to import and call synthetic_tile from the same package
+        # The API is SyntheticTileGenerator().generate() → SyntheticTile with .optical attribute
         try:
             sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            from part_a_vision.synthetic_tile import generate_synthetic_tile
+            from part_a_vision.synthetic_tile import SyntheticTileGenerator
 
-            # Default params for Koramangala
-            tile, _ = generate_synthetic_tile(
+            # Generate one tile at the target size using the real OSMnx-based generator
+            gen = SyntheticTileGenerator(
                 bbox=self.bbox,
-                resolution_m=5.8,
-                num_bands=4,
+                H=self._target_size_snapped,
+                W=self._target_size_snapped,
             )
-            logger.info("Synthetic tile generated via synthetic_tile.py")
-        except ImportError:
+            synthetic_tile = gen.generate(seed=42, occlusion_type='none')
+            tile = synthetic_tile.optical  # (4, H, W) float32
+            logger.info("Synthetic tile generated via synthetic_tile.py SyntheticTileGenerator")
+        except Exception as e:
             # Minimal procedural fallback - creates a (4, 512, 512) noise tile
             # with a simple road-like cross pattern
             logger.warning(
-                "synthetic_tile.py not importable - using minimal procedural fallback"
+                f"synthetic_tile.py SyntheticTileGenerator unavailable ({e}) - using minimal procedural fallback"
             )
             size = self._target_size_snapped
             tile = np.random.RandomState(42).rand(4, size, size).astype(np.float32) * 0.2

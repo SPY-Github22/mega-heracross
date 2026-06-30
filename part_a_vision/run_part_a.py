@@ -12,7 +12,7 @@ from part_a_vision.tta import tta_infer
 from part_a_vision.postprocess import apply_morphology
 from part_a_vision.output_writer import write_road_mask, write_meta
 
-def run_pipeline(mode="synthetic", occlusion="none", output_dir="outputs"):
+def run_pipeline(mode="synthetic", occlusion="none", output_dir="part_a_vision/outputs"):
     print("======================================================")
     print("  Part A: Vision & Occlusion Engine (Integration)     ")
     print(f"  Mode: {mode} | Occlusion: {occlusion}")
@@ -50,10 +50,24 @@ def run_pipeline(mode="synthetic", occlusion="none", output_dir="outputs"):
     model = SegformerB3Custom(input_channels=12, num_classes=1).to(device)
     
     # We load the weights from best_checkpoint if available, else we just run initialized
-    checkpoint_path = os.path.join("outputs", "best_checkpoint.pth")
-    if os.path.exists(checkpoint_path):
+    # Search in both legacy location and part_a_vision/models/
+    checkpoint_candidates = [
+        os.path.join("outputs", "best_checkpoint.pth"),
+        os.path.join("part_a_vision", "models", "best_checkpoint.pth"),
+    ]
+    checkpoint_path = next((p for p in checkpoint_candidates if os.path.exists(p)), None)
+    if checkpoint_path is not None:
         try:
-            checkpoint = torch.load(checkpoint_path, map_location=device)
+            # PyTorch 2.6+ changed weights_only default to True.
+            # Checkpoints containing numpy scalars require explicit allowlisting.
+            try:
+                import numpy as _np
+                import torch.serialization as _ts
+                _ts.add_safe_globals([_np._core.multiarray.scalar])
+                checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
+            except (AttributeError, Exception):
+                # Fallback for older PyTorch or if safe_globals unavailable
+                checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
             state_dict = checkpoint['model_state_dict']
             
             # Adaptation for 12 channels (from 10)
@@ -67,11 +81,11 @@ def run_pipeline(mode="synthetic", occlusion="none", output_dir="outputs"):
                     state_dict['model.segformer.encoder.patch_embeddings.0.proj.weight'] = new_proj_weight
                 
             model.load_state_dict(state_dict)
-            print("✓ Loaded pre-trained weights")
+            print(f"✓ Loaded pre-trained weights from: {checkpoint_path}")
         except Exception as e:
             print(f"[!] Failed to load weights ({e}). Running with random weights.")
     else:
-        print("[!] best_checkpoint.pth not found. Running with random weights for integration test.")
+        print("[!] best_checkpoint.pth not found in any known location. Running with random weights for integration test.")
         
     model.eval()
     

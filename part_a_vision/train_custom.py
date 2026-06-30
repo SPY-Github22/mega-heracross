@@ -425,7 +425,7 @@ class Trainer:
         avg_metrics["loss_bce"] = running_bce / n_batches
         avg_metrics["loss_boundary"] = running_boundary / n_batches
         avg_metrics["loss_conn"] = running_conn / n_batches
-        avg_metrics["loss_aux"] = running_aux / n_batches
+
         return avg_loss, avg_metrics
 
     def _save_checkpoint(self, filename: str) -> None:

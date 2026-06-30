@@ -2,21 +2,24 @@
 Mega-Heracross: Full Pipeline Runner
 Part A → Part B → Part C
 """
+import subprocess
+import os
+import sys
 
 def main():
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    
     print("[A] Running Vision Engine...")
-    # from part_a_vision.segment import run as run_a
-    # run_a()
+    subprocess.run([sys.executable, "part_a_vision/run_part_a.py", "--occlusion", "all"], env=env, check=True)
 
-    print("[B] Running Skeletonization Engine...")
-    # from part_b_skeleton.skeletonize import run as run_b
-    # run_b()
+    print("\n[B] Running Skeletonization Engine...")
+    subprocess.run([sys.executable, "part_b_skeleton/run.py"], env=env, check=True)
 
-    print("[C] Running Resilience Engine...")
-    # from part_c_resilience.resilience_analyzer import run as run_c
-    # run_c()
+    print("\n[C] Running Resilience Engine...")
+    subprocess.run([sys.executable, "part_c_resilience/main.py"], env=env, check=True)
 
-    print("Pipeline complete. Check outputs/.")
+    print("\nPipeline complete. Check outputs/.")
 
 if __name__ == "__main__":
     main()

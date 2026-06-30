@@ -257,16 +257,16 @@ class RoadDataset(Dataset):
         try:
             return self._make_tile_full_pipeline(seed)
         except Exception as exc:
-            logger.debug("Full pipeline unavailable for seed %d: %s - using procedural", seed, exc)
+            logger.warning("Full pipeline unavailable for seed %d: %s - using synthetic_tile.py procedural generator", seed, exc)
             return self._make_tile_procedural(seed)
 
     def _make_tile_full_pipeline(
         self, seed: int
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Generate tile using Phase 4+5+6 pipelines."""
-        from optical_reader import OpticalPreprocessor
-        from sar_reader import SARPreprocessor
-        from fusion import FusionModule
+        from part_a_vision.optical_reader import OpticalPreprocessor
+        from part_a_vision.sar_reader import SARPreprocessor
+        from part_a_vision.fusion import FusionModule
 
         size = self.tile_size
 
