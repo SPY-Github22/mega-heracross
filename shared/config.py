@@ -8,7 +8,7 @@ TEST_TILE_BBOX = (77.6101, 12.9177, 77.6401, 12.9377)  # (min_lon, min_lat, max_
 # ── Graph Source ───────────────────────────────────────────────
 GRAPH_SOURCE = "part_b"        # switch to "osmnx" for fallback demo
 
-# ── Output Paths ───────────────────────────────────────────────
+# ── Output Paths ──────────────────────────────────────────────
 ROAD_MASK_PATH = "part_a_vision/outputs/road_mask.npy"
 META_PATH      = "part_a_vision/outputs/meta.json"
 GRAPH_PATH     = "part_b_skeleton/outputs/graph.json"
