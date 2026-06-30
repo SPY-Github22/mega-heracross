@@ -114,7 +114,7 @@ def download_osm_graph(bbox: Tuple[float, float, float, float],
     print(f"  BBox: lon [{min_lon}, {max_lon}], lat [{min_lat}, {max_lat}]")
 
     G = ox.graph_from_bbox(
-        bbox=osm_bbox,
+        osm_bbox,
         network_type=network_type,
         simplify=True,       # collapse degree-2 nodes (cleaner topology)
         retain_all=False,    # keep only largest connected component

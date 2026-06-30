@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-06-30T03:33:47.557778+00:00",
+  "timestamp": "2026-06-30T04:10:32.539532+00:00",
   "system": {
-    "python_version": "3.12.3",
-    "platform": "Linux-6.18.5-x86_64-with-glibc2.39",
-    "cpu_count": 1
+    "python_version": "3.13.14",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cpu_count": 8
   },
   "hyperparameters": {
     "TARGET_CRS": "EPSG:4326",
@@ -26,21 +26,21 @@
     "road_mask_npy": "FILE_NOT_FOUND",
     "meta_json": "FILE_NOT_FOUND"
   },
-  "output_hash": "7056cc2a7296efaf",
+  "output_hash": "2d5144a177cf9c74",
   "metrics": {
     "contract_status": "PASS",
     "node_count": 25,
     "edge_count": 26,
     "lcc_pct": 1.0,
-    "node_f1": 0.12,
+    "node_f1": 0.0011,
     "edge_f1": 0.0,
     "total_length_km": 15.747,
     "source": "synthetic",
     "resolution_m": 13.7,
     "fragility_auc": 0.9431,
     "node_f1_ci": [
-      0.12,
-      0.12
+      0.0011,
+      0.0011
     ],
     "edge_f1_ci": [
       0.0,
@@ -48,16 +48,16 @@
     ]
   },
   "timings_ms": {
-    "loader": 0.2,
-    "skeletonize": 3.5,
-    "graph_build": 2370.1,
-    "healing": 1.4,
-    "simplify": 4.2,
-    "weight_audit": 5.7,
-    "classify": 5.6,
-    "fragility": 4.4,
-    "bootstrap": 3.0
+    "loader": 0.7,
+    "skeletonize": 19.0,
+    "graph_build": 8793.9,
+    "healing": 27.0,
+    "simplify": 22.1,
+    "weight_audit": 49.6,
+    "classify": 29.8,
+    "fragility": 21.7,
+    "bootstrap": 419.5
   },
-  "total_runtime_s": 2.43,
+  "total_runtime_s": 23.1,
   "passes_30s_target": true
 }
