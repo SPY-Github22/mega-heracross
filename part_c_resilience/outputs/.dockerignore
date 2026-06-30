@@ -1,9 +1,0 @@
-.git
-__pycache__
-*.pyc
-.gitignore
-README.md
-venv
-.env
-*.egg-info
-.DS_Store
