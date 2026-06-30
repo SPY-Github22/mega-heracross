@@ -61,7 +61,7 @@ POS_WEIGHT_ROAD: float = 6.0
 TARGET_IOU: float = 0.30
 NUM_TILES: int = 200
 TILE_SIZE: int = 512
-INPUT_CHANNELS: int = 6
+INPUT_CHANNELS: int = 12
 NUM_CLASSES: int = 1  # binary road segmentation
 
 # ---------------------------------------------------------------------------
