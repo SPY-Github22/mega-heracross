@@ -15,7 +15,7 @@ def verify_contract(output_dir="outputs"):
     if not os.path.exists(meta_path):
         raise FileNotFoundError(f"Missing {meta_path}")
         
-    print("✓ Files found")
+    print("[OK] Files found")
     
     # 2. Check meta.json schema
     with open(meta_path, 'r') as f:
@@ -32,7 +32,7 @@ def verify_contract(output_dir="outputs"):
     if not isinstance(meta["bbox"], list) or len(meta["bbox"]) != 4:
         raise ValueError("Invalid bbox format")
         
-    print("✓ meta.json schema validated")
+    print("[OK] meta.json schema validated")
     
     # 3. Check road_mask.npy properties
     mask = np.load(mask_path)
@@ -48,8 +48,8 @@ def verify_contract(output_dir="outputs"):
         if val not in [0, 1]:
             raise ValueError(f"Invalid value in mask: {val} (expected only 0 or 1)")
             
-    print(f"✓ road_mask.npy validated (shape: {mask.shape}, dtype: {mask.dtype})")
-    print("\n✓ Part A -> Part B Contract: PASSED")
+    print(f"[OK] road_mask.npy validated (shape: {mask.shape}, dtype: {mask.dtype})")
+    print("\n[OK] Part A -> Part B Contract: PASSED")
     return True
 
 if __name__ == "__main__":

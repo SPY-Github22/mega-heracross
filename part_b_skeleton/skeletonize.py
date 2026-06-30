@@ -262,28 +262,28 @@ def print_skeleton_report(metrics: Dict, violations: list,
     print(f"  Road pixels       : {metrics['road_pixels']:,}")
     print(f"  Skeleton pixels   : {metrics['skeleton_pixels']:,}")
     print(f"  Skeleton density  : {density:.4f}  "
-          f"({'✓ in range 0.02–0.60' if density_ok else '✗ out of range'})")
+          f"({'[OK] in range 0.02–0.60' if density_ok else '✗ out of range'})")
     print(f"  Total length      : {metrics['total_length_m']:.0f} m  "
           f"({metrics['total_length_m']/1000:.2f} km)")
     print(f"  Connected parts   : {metrics['n_components']}  "
           f"(largest = {metrics['max_component_frac']:.1%} of skeleton)")
     print(f"  Width violations  : {metrics['width_violations']}  "
-          f"({'✓' if metrics['width_violations'] == 0 else '⚠ small number ok at junctions'})")
+          f"({'[OK]' if metrics['width_violations'] == 0 else '⚠ small number ok at junctions'})")
 
     # Qualitative density interpretation
     print(f"\n  Density interpretation:")
     if density < 0.05:
         print(f"    ⚠ Very sparse — roads may be thin or noisy in input mask")
     elif density <= 0.15:
-        print(f"    ✓ Typical for narrow roads (lanes, local streets)")
+        print(f"    [OK] Typical for narrow roads (lanes, local streets)")
     elif density <= 0.25:
-        print(f"    ✓ Typical for wide roads (arterials, highways)")
+        print(f"    [OK] Typical for wide roads (arterials, highways)")
     else:
         print(f"    ⚠ Dense — wide roads or mask has thick blobs")
 
     print(f"\n  Connectivity:")
     if metrics['n_components'] == 1:
-        print(f"    ✓ Fully connected skeleton")
+        print(f"    [OK] Fully connected skeleton")
     elif metrics['n_components'] <= 5:
         print(f"    ○ {metrics['n_components']} components — "
               f"small breaks, Phase 12 healing will fix these")
@@ -299,7 +299,7 @@ def print_skeleton_report(metrics: Dict, violations: list,
         print(f"  SKELETON: ✗ FAIL")
     else:
         print(f"\n{SEP}")
-        print(f"  SKELETON: ✓ PASS")
+        print(f"  SKELETON: [OK] PASS")
     print(SEP)
 
 

@@ -205,32 +205,32 @@ def print_weight_audit_report(metrics: Dict) -> None:
     print(f"  Edges audited     : {metrics['n_edges']}")
     print(f"  Tolerance         : {metrics['tolerance_m']:.1f} m")
     print(f"  Corrections made  : {corrections}  "
-          f"{'✓ all weights geodetically correct' if corrections == 0 else '⚠ weights corrected'}")
+          f"{'[OK] all weights geodetically correct' if corrections == 0 else '⚠ weights corrected'}")
     print(f"  Max delta         : {metrics['max_delta_m']:.4f} m")
     print(f"  Mean delta        : {metrics['mean_delta_m']:.4f} m")
 
     print(f"\n  Weight distribution (Haversine-recomputed):")
     print(f"    Min    : {metrics['min_weight_m']:.1f} m  "
-          f"{'✓' if not metrics['has_short_edges'] else '⚠ degenerate edges present'}")
+          f"{'[OK]' if not metrics['has_short_edges'] else '⚠ degenerate edges present'}")
     print(f"    P25    : {metrics['p25_weight_m']:.1f} m")
     print(f"    Median : {metrics['median_weight_m']:.1f} m")
     print(f"    Mean   : {metrics['mean_weight_m']:.1f} m")
     print(f"    P75    : {metrics['p75_weight_m']:.1f} m")
     print(f"    Max    : {metrics['max_weight_m']:.1f} m  "
-          f"{'✓' if not metrics['has_long_edges'] else '⚠ unusually long edges'}")
+          f"{'[OK]' if not metrics['has_long_edges'] else '⚠ unusually long edges'}")
     print(f"    Total  : {metrics['total_length_km']:.3f} km")
 
     # Koramangala sanity check
     mean_w = metrics['mean_weight_m']
     if 50 <= mean_w <= 500:
-        print(f"\n  ✓ Mean edge length {mean_w:.0f}m — consistent with urban Koramangala")
+        print(f"\n  [OK] Mean edge length {mean_w:.0f}m — consistent with urban Koramangala")
     elif mean_w < 50:
         print(f"\n  ⚠ Mean edge length {mean_w:.0f}m — unusually short (noise?)")
     else:
         print(f"\n  ⚠ Mean edge length {mean_w:.0f}m — unusually long (under-segmented?)")
 
     print(f"\n{SEP}")
-    print(f"  WEIGHT AUDIT: {'✓ PASS — all weights geodetically correct' if audit_pass else '○ CORRECTED — weights recomputed'}")
+    print(f"  WEIGHT AUDIT: {'[OK] PASS — all weights geodetically correct' if audit_pass else '○ CORRECTED — weights recomputed'}")
     print(SEP)
 
 

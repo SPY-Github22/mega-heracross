@@ -159,7 +159,7 @@ def validate_contract(
             "\n".join(errors)
         )
 
-    print("✓ Contract validation PASSED")
+    print("[OK] Contract validation PASSED")
     return {'mask': mask, 'meta': meta}
 
 
@@ -731,7 +731,7 @@ def print_judge_report(result: Dict[str, Any]) -> None:
             f"    Uncertain px:  {_fmt(unc_frac, 1, 5)}% of road pixels"
         )
 
-    contract_str = "✓ PASSED" if result.get('contract_passed') else "✗ FAILED"
+    contract_str = "[OK] PASSED" if result.get('contract_passed') else "✗ FAILED"
     gt_note = "(OSMnx reference)" if result.get('source') == 'synthetic' else ""
 
     lines += [

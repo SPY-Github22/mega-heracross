@@ -81,7 +81,7 @@ def run_pipeline(mode="synthetic", occlusion="none", output_dir="part_a_vision/o
                     state_dict['model.segformer.encoder.patch_embeddings.0.proj.weight'] = new_proj_weight
                 
             model.load_state_dict(state_dict)
-            print(f"✓ Loaded pre-trained weights from: {checkpoint_path}")
+            print(f"[OK] Loaded pre-trained weights from: {checkpoint_path}")
         except Exception as e:
             print(f"[!] Failed to load weights ({e}). Running with random weights.")
     else:
@@ -124,7 +124,7 @@ def run_pipeline(mode="synthetic", occlusion="none", output_dir="part_a_vision/o
     meta_path = os.path.join(output_dir, "meta.json")
     write_road_mask(final_mask, path=mask_path)
     write_meta(crs="EPSG:4326", bbox=bbox, resolution_m=5.8, source="LISS-IV", path=meta_path)
-    print(f"✓ Part A complete. Output saved to {output_dir}/road_mask.npy")
+    print(f"[OK] Part A complete. Output saved to {output_dir}/road_mask.npy")
     
     return iou
 

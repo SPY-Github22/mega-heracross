@@ -443,5 +443,5 @@ def print_spline_healing_report(metrics: dict) -> None:
         print(f"    Linear (fallback) : {linear}  ({linear/total*100:.0f}%)")
     print(f"  LCC: {metrics['lcc_before']:.1%} → {metrics['lcc_after']:.1%}")
     print(f"\n{SEP}")
-    print(f"  SPLINE HEALING: ✓ COMPLETE")
+    print(f"  SPLINE HEALING: [OK] COMPLETE")
     print(SEP)

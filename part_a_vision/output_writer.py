@@ -144,7 +144,7 @@ def write_road_mask(mask_array: np.ndarray, path: str = ROAD_MASK_PATH) -> None:
     total_px = int(mask_array.size)
     frac     = road_px / total_px * 100
 
-    print(f"✓ road_mask.npy saved")
+    print(f"[OK] road_mask.npy saved")
     print(f"  Path:         {path}")
     print(f"  Shape:        {mask_array.shape} (H={mask_array.shape[0]}, W={mask_array.shape[1]})")
     print(f"  Road pixels:  {road_px:,} / {total_px:,} ({frac:.1f}%)")
@@ -183,7 +183,7 @@ def write_meta(
     with open(path, 'w') as f:
         json.dump(asdict(meta), f, indent=2)
 
-    print(f"✓ meta.json saved")
+    print(f"[OK] meta.json saved")
     print(f"  Path:         {path}")
     print(f"  CRS:          {crs}")
     print(f"  BBox:         {bbox}")
@@ -245,7 +245,7 @@ def load_and_verify(
     road_px  = int(mask.sum())
     total_px = int(mask.size)
 
-    print(f"✓ Contract validation PASSED")
+    print(f"[OK] Contract validation PASSED")
     print(f"  Mask:   {mask.shape}, dtype={mask.dtype}, "
           f"road={road_px:,}/{total_px:,} ({road_px/total_px*100:.1f}%)")
     print(f"  Meta:   crs={meta_dict['crs']}, source={meta_dict['source']}, "

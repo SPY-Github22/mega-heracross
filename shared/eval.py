@@ -5,7 +5,7 @@ Shared evaluation module — all three Parts contribute here.
 Runs automatically at the end of every Part B execution.
 
 EVALUATION LAYERS:
-    Layer 1 — Contract validation        (Phase 02) ✓
+    Layer 1 — Contract validation        (Phase 02) [OK]
     Layer 2 — Quantitative topology      (Phases 07–09)
     Layer 3 — Statistical confidence     (Phases 23–25)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -272,7 +272,7 @@ def validate_graph_contract(graph_json_path: str) -> dict:
         result["summary"] = (
             f"CONTRACT: PASS | "
             f"nodes={result['node_count']} edges={result['edge_count']} | "
-            f"CRS=EPSG:4326 ✓"
+            f"CRS=EPSG:4326 [OK]"
         )
 
     return result
@@ -297,10 +297,10 @@ def print_contract_result(result: dict) -> None:
         status = result["status"]
         if status == "PASS":
             print(f"  All schema fields present and correctly typed.")
-            print(f"  Node lat/lon within Koramangala bounding box ✓")
-            print(f"  All edge source/target IDs reference valid nodes ✓")
-            print(f"  All edge weight_m > 0 ✓")
-            print(f"  All geometry lists non-empty ✓")
+            print(f"  Node lat/lon within Koramangala bounding box [OK]")
+            print(f"  All edge source/target IDs reference valid nodes [OK]")
+            print(f"  All edge weight_m > 0 [OK]")
+            print(f"  All geometry lists non-empty [OK]")
 
     print(SEP)
 
@@ -497,7 +497,7 @@ def print_topology_f1_result(result: dict) -> None:
         return "█" * filled + "░" * (width - filled)
 
     def _grade(f1):
-        if f1 >= 0.80: return "✓ STRONG"
+        if f1 >= 0.80: return "[OK] STRONG"
         if f1 >= 0.60: return "○ ACCEPTABLE"
         if f1 >= 0.40: return "⚠ WEAK"
         return "✗ POOR"
@@ -640,7 +640,7 @@ def print_connectivity_report(result: dict) -> None:
 
     # Health label
     if lcc_pct >= 0.80:
-        health = "✓ HEALTHY"
+        health = "[OK] HEALTHY"
     elif lcc_pct >= 0.60:
         health = "○ ACCEPTABLE"
     elif lcc_pct >= 0.40:
@@ -676,14 +676,14 @@ def print_connectivity_report(result: dict) -> None:
 
     print(f"\n  Routing implications:")
     if lcc_pass:
-        print(f"    ✓ Graph is usable for Part C criticality analysis")
-        print(f"    ✓ {lcc_pct:.1%} of nodes reachable from largest component")
+        print(f"    [OK] Graph is usable for Part C criticality analysis")
+        print(f"    [OK] {lcc_pct:.1%} of nodes reachable from largest component")
     else:
         print(f"    ✗ LCC% = {lcc_pct:.1%} < {threshold:.0%} threshold")
         print(f"    ✗ Phase 12 MST healing must improve connectivity before Part C")
 
     print(f"\n{SEP}")
-    print(f"  CONNECTIVITY: {'✓ PASS' if lcc_pass else '✗ FAIL — healing required'}")
+    print(f"  CONNECTIVITY: {'[OK] PASS' if lcc_pass else '✗ FAIL — healing required'}")
     print(SEP)
 
 
@@ -721,7 +721,7 @@ def print_judge_report(metrics: dict) -> None:
         return f"  {label:<{label_w}} {value_s:<14}{status_s}"
 
     def _score_tag(val, good, ok):
-        if val >= good: return "✓"
+        if val >= good: return "[OK]"
         if val >= ok:   return "○"
         return "✗"
 
@@ -737,13 +737,13 @@ def print_judge_report(metrics: dict) -> None:
     contract_status = metrics.get("contract_status", "UNKNOWN")
     n_nodes  = metrics.get("node_count", 0)
     n_edges  = metrics.get("edge_count", 0)
-    c_ok = "✓" if contract_status == "PASS" else "✗"
+    c_ok = "[OK]" if contract_status == "PASS" else "✗"
 
     print(f"\n  [1] CONTRACT")
     print(_line("Schema validation",  contract_status,   "", c_ok))
     print(_line("Nodes emitted",      n_nodes,           ""))
     print(_line("Edges emitted",      n_edges,           ""))
-    print(_line("CRS",                "EPSG:4326",       "", "✓"))
+    print(_line("CRS",                "EPSG:4326",       "", "[OK]"))
 
     # ── Section 2: INPUT MASK ─────────────────────────────────
     source      = metrics.get("source", "unknown")
@@ -803,12 +803,12 @@ def print_judge_report(metrics: dict) -> None:
     print(_line("LCC%", f"{lcc_pct:.1%}", "",
                 _score_tag(lcc_pct, 0.80, 0.60)))
     print(_line("Components",  n_comp,  "",
-                "✓" if n_comp <= 3 else ("○" if n_comp <= 10 else "✗")))
+                "[OK]" if n_comp <= 3 else ("○" if n_comp <= 10 else "✗")))
     print(_line("Isolated nodes", isolated, "",
-                "✓" if isolated == 0 else "○"))
+                "[OK]" if isolated == 0 else "○"))
     print(_line("Routing usable",
                 "YES" if lcc_pass else "NO — needs healing", "",
-                "✓" if lcc_pass else "✗"))
+                "[OK]" if lcc_pass else "✗"))
 
     # ── Overall score ─────────────────────────────────────────
     scores = {
@@ -945,8 +945,8 @@ def print_healing_validation(result: dict) -> None:
     thresh   = result["lcc_threshold"]
 
     status_icon = {
-        "PASS":                  "✓",
-        "PASS_AFTER_SECOND_PASS": "✓",
+        "PASS":                  "[OK]",
+        "PASS_AFTER_SECOND_PASS": "[OK]",
         "WARN":                  "⚠",
     }.get(status, "?")
 
@@ -966,9 +966,9 @@ def print_healing_validation(result: dict) -> None:
 
     print(f"\n{SEP}")
     if status == "PASS":
-        print(f"  HEALING GATE: ✓ PASS (single pass sufficient)")
+        print(f"  HEALING GATE: [OK] PASS (single pass sufficient)")
     elif status == "PASS_AFTER_SECOND_PASS":
-        print(f"  HEALING GATE: ✓ PASS (required second pass at relaxed snap)")
+        print(f"  HEALING GATE: [OK] PASS (required second pass at relaxed snap)")
     else:
         print(f"  HEALING GATE: ⚠ WARN — Part C will run but results are suboptimal")
         print(f"  Action: improve Part A mask quality for better road coverage")
@@ -1082,7 +1082,7 @@ def print_fragility_report(result: dict) -> None:
     """Print Phase 23 fragility report."""
     SEP = "─" * 60
     auc = result.get("fragility_auc", 0)
-    if auc >= 0.90:   grade = "✓ RESILIENT"
+    if auc >= 0.90:   grade = "[OK] RESILIENT"
     elif auc >= 0.75: grade = "○ MODERATE"
     else:             grade = "⚠ FRAGILE"
 
@@ -1237,5 +1237,5 @@ def print_bootstrap_ci_report(result: dict) -> None:
     print(f"  edge_F1 = {ef_m:.4f}  95% CI [{ef_ci[0]:.4f}, {ef_ci[1]:.4f}]")
     print(f"  (Wide CI = high OSM sampling variance; narrow = stable metric)")
     print(f"\n{SEP}")
-    print(f"  BOOTSTRAP CI: ✓ COMPUTED")
+    print(f"  BOOTSTRAP CI: [OK] COMPUTED")
     print(SEP)

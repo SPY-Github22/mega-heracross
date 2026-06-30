@@ -219,7 +219,7 @@ def print_resolution_config(cfg: ResolutionAwareConfig) -> None:
     # Sensor identification
     src = _normalise_source(cfg.source)
     if src in _SENSOR_RESOLUTION:
-        print(f"\n  ✓ Known sensor: {cfg.source} "
+        print(f"\n  [OK] Known sensor: {cfg.source} "
               f"(official GSD = {_SENSOR_RESOLUTION[src]:.1f} m/px)")
     else:
         print(f"\n  ○ Unknown sensor '{cfg.source}' — "
@@ -228,5 +228,5 @@ def print_resolution_config(cfg: ResolutionAwareConfig) -> None:
     print(f"\n  All pipeline thresholds derived from resolution:")
     print(f"    {cfg.summary_line()}")
     print(f"\n{SEP}")
-    print(f"  RESOLUTION CONFIG: ✓ READY")
+    print(f"  RESOLUTION CONFIG: [OK] READY")
     print(SEP)

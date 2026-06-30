@@ -77,4 +77,4 @@ def generate_static_heatmap(G_full, edge_betweenness, node_criticality,
     m = build_folium_map(G_full, edge_betweenness, node_criticality, top_n, bbox, collapse_removed_nodes)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     m.save(output_path)
-    print(f"✓ Enhanced heatmap saved to {output_path}")
+    print(f"[OK] Enhanced heatmap saved to {output_path}")

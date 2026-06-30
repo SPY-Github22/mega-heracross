@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-30T04:10:32.539532+00:00",
+  "timestamp": "2026-06-30T10:24:19.721060+00:00",
   "system": {
     "python_version": "3.13.14",
     "platform": "Windows-11-10.0.26200-SP0",
@@ -23,41 +23,41 @@
     "sar_guided": true
   },
   "input_hashes": {
-    "road_mask_npy": "FILE_NOT_FOUND",
-    "meta_json": "FILE_NOT_FOUND"
+    "road_mask_npy": "4e6b96cd944c49e7",
+    "meta_json": "e74e308974f5efe1"
   },
-  "output_hash": "2d5144a177cf9c74",
+  "output_hash": "0121e0e2e529c5ae",
   "metrics": {
     "contract_status": "PASS",
-    "node_count": 25,
-    "edge_count": 26,
-    "lcc_pct": 1.0,
-    "node_f1": 0.0011,
-    "edge_f1": 0.0,
-    "total_length_km": 15.747,
-    "source": "synthetic",
-    "resolution_m": 13.7,
-    "fragility_auc": 0.9431,
+    "node_count": 442,
+    "edge_count": 442,
+    "lcc_pct": 0.9706,
+    "node_f1": 0.0414,
+    "edge_f1": 0.0022,
+    "total_length_km": 52.448,
+    "source": "LISS-IV",
+    "resolution_m": 5.8,
+    "fragility_auc": 0.9907,
     "node_f1_ci": [
-      0.0011,
-      0.0011
+      0.0414,
+      0.0414
     ],
     "edge_f1_ci": [
-      0.0,
-      0.0
+      0.0009,
+      0.0026
     ]
   },
   "timings_ms": {
-    "loader": 0.7,
-    "skeletonize": 19.0,
-    "graph_build": 8793.9,
-    "healing": 27.0,
-    "simplify": 22.1,
-    "weight_audit": 49.6,
-    "classify": 29.8,
-    "fragility": 21.7,
-    "bootstrap": 419.5
+    "loader": 8.0,
+    "skeletonize": 120.0,
+    "graph_build": 5377.2,
+    "healing": 81.8,
+    "simplify": 128.0,
+    "weight_audit": 102.1,
+    "classify": 130.1,
+    "fragility": 109.9,
+    "bootstrap": 192.9
   },
-  "total_runtime_s": 23.1,
+  "total_runtime_s": 6.66,
   "passes_30s_target": true
 }

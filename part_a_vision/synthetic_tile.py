@@ -1298,7 +1298,7 @@ def main() -> None:
                     title=f"Synthetic Koramangala - {occ_t.upper()} occlusion"
                 )
 
-        print("\n✓ Demo complete.")
+        print("\n[OK] Demo complete.")
         print(f"  Outputs:  part_a_vision/outputs/road_mask.npy")
         print(f"            part_a_vision/outputs/meta.json")
         print(f"  Visuals:  part_a_vision/outputs/demo_visuals/")

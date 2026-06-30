@@ -178,7 +178,7 @@ def run_osmnx_fallback() -> Tuple[RoadGraph, RoadMaskMeta, dict]:
         for v in violations:
             print(f"    ✗ {v}")
     else:
-        print(f"  ✓ osmnx graph valid: "
+        print(f"  [OK] osmnx graph valid: "
               f"{len(road_graph.nodes)} nodes, {len(road_graph.edges)} edges")
 
     meta = make_osmnx_meta()

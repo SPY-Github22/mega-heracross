@@ -320,7 +320,7 @@ def print_osm_report(stats: Dict, cache_path: str,
     print(f"  Our graph must match as many of the {stats['n_nodes']} nodes")
     print(f"  and {stats['n_edges']} edges as possible to score well.")
     print(f"\n{SEP}")
-    print(f"  OSM REFERENCE: ✓ READY")
+    print(f"  OSM REFERENCE: [OK] READY")
     print(SEP)
 
 
@@ -408,7 +408,7 @@ def load_or_download_osm(cache_path: str = OSM_CACHE_PATH,
     from_cache = False
 
     if os.path.exists(cache_path) and not force_refresh:
-        print(f"  ✓ Loading OSM reference from cache: {cache_path}")
+        print(f"  [OK] Loading OSM reference from cache: {cache_path}")
         road_graph, meta = load_osm_reference(cache_path)
         from_cache = True
     else:
@@ -416,12 +416,12 @@ def load_or_download_osm(cache_path: str = OSM_CACHE_PATH,
             t0 = time.perf_counter()
             G = download_osm_graph(TEST_TILE_BBOX, network_type=network_type)
             elapsed = time.perf_counter() - t0
-            print(f"  ✓ Downloaded in {elapsed:.1f}s — "
+            print(f"  [OK] Downloaded in {elapsed:.1f}s — "
                   f"{G.number_of_nodes()} nodes, {G.number_of_edges()} edges (raw)")
             road_graph = osmnx_to_road_graph(G)
             meta = {"network_type": network_type}
             save_osm_reference(road_graph, cache_path, metadata=meta)
-            print(f"  ✓ Cached to: {cache_path}")
+            print(f"  [OK] Cached to: {cache_path}")
             _, meta = load_osm_reference(cache_path)
 
         except Exception as e:

@@ -60,7 +60,7 @@ def run_resilience_pipeline(G, config):
     eval_path = os.path.join(output_dir, "evaluation.json")
     with open(eval_path, "w") as f:
         json.dump(metrics, f, indent=2)
-    print(f"✓ Evaluation metrics saved to {eval_path}")
+    print(f"[OK] Evaluation metrics saved to {eval_path}")
 
     # Phase 9/10: heatmap
     sorted_crit = sorted(node_crit.items(), key=lambda x: x[1], reverse=True)

@@ -317,7 +317,7 @@ def print_graph_report(stats: Dict, violations: list,
     print(f"  Max  edge length  : {stats['max_weight_m']:.1f} m")
     print(f"  Total road length : {stats['total_length_km']:.3f} km")
     print(f"  Mean geom points  : {stats['mean_geometry_points']:.1f} pts/edge")
-    print(f"  CRS               : EPSG:4326 ✓")
+    print(f"  CRS               : EPSG:4326 [OK]")
     print(f"  Output            : {output_path}")
 
     if violations:
@@ -328,7 +328,7 @@ def print_graph_report(stats: Dict, violations: list,
         print(f"  GRAPH: ✗ FAIL")
     else:
         print(f"\n{SEP}")
-        print(f"  GRAPH: ✓ PASS — graph.json emitted, ready for Part C")
+        print(f"  GRAPH: [OK] PASS — graph.json emitted, ready for Part C")
     print(SEP)
 
 

@@ -39,7 +39,7 @@ _tmp  = Path(tempfile.mkdtemp())
 def check(condition: bool, label: str, detail: str = "") -> None:
     global _pass, _fail
     if condition:
-        print(f"  ✓ PASS  [{label}]")
+        print(f"  [OK] PASS  [{label}]")
         _pass += 1
     else:
         print(f"  ✗ FAIL  [{label}]")
@@ -55,7 +55,7 @@ def expect_error(fn, *args, error_type=ValueError, label="", **kwargs):
         print(f"         Expected {error_type.__name__} but no exception raised")
         _fail += 1
     except error_type:
-        print(f"  ✓ PASS  [{label}]")
+        print(f"  [OK] PASS  [{label}]")
         _pass += 1
     except Exception as e:
         print(f"  ✗ FAIL  [{label}]")
@@ -420,8 +420,8 @@ total = _pass + _fail
 print(f"  Results: {_pass} / {total} passed   ({_fail} failed)")
 print()
 if _fail == 0:
-    print("  ✓ ALL PHASE 3 TESTS PASSED")
-    print("  ✓ Phase 3 exit criterion: MET")
+    print("  [OK] ALL PHASE 3 TESTS PASSED")
+    print("  [OK] Phase 3 exit criterion: MET")
     print()
     print("  What this gives every future phase:")
     print("    python shared/eval.py --part_a")

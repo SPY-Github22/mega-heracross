@@ -345,19 +345,19 @@ def print_simplification_report(metrics: Dict) -> None:
           f"(removed {metrics['edges_removed']}, added {metrics['edges_added']})")
 
     if removed == 0:
-        print(f"\n  ✓ No degree-2 nodes found — graph already simplified")
-        print(f"  ✓ (sknw may have pre-collapsed on clean skeleton)")
+        print(f"\n  [OK] No degree-2 nodes found — graph already simplified")
+        print(f"  [OK] (sknw may have pre-collapsed on clean skeleton)")
     elif pct < 20:
-        print(f"\n  ✓ Light simplification — {removed} pass-through nodes collapsed")
+        print(f"\n  [OK] Light simplification — {removed} pass-through nodes collapsed")
     elif pct < 50:
-        print(f"\n  ✓ Good simplification — {pct:.1f}% node reduction")
-        print(f"  ✓ Part C betweenness will run significantly faster")
+        print(f"\n  [OK] Good simplification — {pct:.1f}% node reduction")
+        print(f"  [OK] Part C betweenness will run significantly faster")
     else:
-        print(f"\n  ✓ Heavy simplification — {pct:.1f}% node reduction")
-        print(f"  ✓ Typical for dense real-world masks (curved roads)")
+        print(f"\n  [OK] Heavy simplification — {pct:.1f}% node reduction")
+        print(f"  [OK] Typical for dense real-world masks (curved roads)")
 
     print(f"\n{SEP}")
-    print(f"  SIMPLIFICATION: ✓ COMPLETE")
+    print(f"  SIMPLIFICATION: [OK] COMPLETE")
     print(SEP)
 
 

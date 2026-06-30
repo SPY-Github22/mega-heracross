@@ -401,7 +401,7 @@ def print_break_detection_report(metrics: Dict) -> None:
               f"graph may already be well-connected.")
     print(f"\n{SEP}")
     print(f"  BREAK DETECTION: "
-          f"{'✓ ' + str(metrics['n_break_pairs']) + ' candidates found' if metrics['n_break_pairs'] > 0 else '○ no breaks in snap radius'}")
+          f"{'[OK] ' + str(metrics['n_break_pairs']) + ' candidates found' if metrics['n_break_pairs'] > 0 else '○ no breaks in snap radius'}")
     print(SEP)
 
 
@@ -423,9 +423,9 @@ def print_healing_report(metrics: Dict) -> None:
     print(f"    Components  : {metrics['components_before']} → {metrics['components_after']}")
     print(f"    LCC%        : {lcc_before:.1%} → {lcc_after:.1%}  "
           f"({'↑ +' if delta >= 0 else '↓ '}{abs(delta):.1%})")
-    print(f"    LCC target  : {'✓ REACHED' if metrics['lcc_target_reached'] else '○ not yet reached'}")
+    print(f"    LCC target  : {'[OK] REACHED' if metrics['lcc_target_reached'] else '○ not yet reached'}")
     print(f"\n{SEP}")
-    print(f"  HEALING: {'✓ IMPROVED' if improved else '○ no change (graph already connected)'}")
+    print(f"  HEALING: {'[OK] IMPROVED' if improved else '○ no change (graph already connected)'}")
     print(SEP)
 
 
@@ -654,10 +654,10 @@ def print_pruning_report(metrics: Dict) -> None:
     print(f"  Reduction         : {reduction:.1f}%")
 
     if pruned == 0:
-        print(f"\n  ✓ No stubs shorter than {metrics['threshold_m']:.1f}m found")
-        print(f"  ✓ Graph is clean — no noise artifacts detected")
+        print(f"\n  [OK] No stubs shorter than {metrics['threshold_m']:.1f}m found")
+        print(f"  [OK] Graph is clean — no noise artifacts detected")
     elif reduction < 10:
-        print(f"\n  ✓ Minor cleanup — {pruned} noise stubs removed")
+        print(f"\n  [OK] Minor cleanup — {pruned} noise stubs removed")
     elif reduction < 30:
         print(f"\n  ○ Moderate pruning — check mask quality if > 20%")
     else:
@@ -665,5 +665,5 @@ def print_pruning_report(metrics: Dict) -> None:
               f" significant noise")
 
     print(f"\n{SEP}")
-    print(f"  PRUNING: ✓ COMPLETE ({pruned} stubs removed)")
+    print(f"  PRUNING: [OK] COMPLETE ({pruned} stubs removed)")
     print(SEP)

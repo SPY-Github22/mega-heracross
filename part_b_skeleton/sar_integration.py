@@ -360,7 +360,7 @@ def print_sar_report(occlusion_metrics: Dict,
         print(f"  LCC: {heal_metrics['lcc_before']:.1%} → {heal_metrics['lcc_after']:.1%}")
 
     print(f"\n{SEP}")
-    print(f"  SAR: ✓ ACTIVE — occlusion-aware healing enabled")
+    print(f"  SAR: [OK] ACTIVE — occlusion-aware healing enabled")
     print(SEP)
 
 
@@ -399,7 +399,7 @@ def run_sar_integration(
                 sar_mask = None
             else:
                 sar_available = True
-                print(f"  ✓ SAR mask loaded: {sar_mask_path}")
+                print(f"  [OK] SAR mask loaded: {sar_mask_path}")
         except Exception as e:
             print(f"  ⚠ SAR mask load failed: {e} — using synthetic")
 

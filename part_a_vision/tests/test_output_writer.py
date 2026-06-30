@@ -36,7 +36,7 @@ def expect_error(fn, *args, error_type=ValueError, label=""):
         print(f"         Expected {error_type.__name__} but no error was raised.")
         _fail += 1
     except error_type as e:
-        print(f"  ✓ PASS  [{label}]")
+        print(f"  [OK] PASS  [{label}]")
         _pass += 1
     except Exception as e:
         print(f"  ✗ FAIL  [{label}]")
@@ -47,7 +47,7 @@ def expect_ok(fn, *args, label=""):
     global _pass, _fail
     try:
         fn(*args)
-        print(f"  ✓ PASS  [{label}]")
+        print(f"  [OK] PASS  [{label}]")
         _pass += 1
     except Exception as e:
         print(f"  ✗ FAIL  [{label}]")
@@ -260,8 +260,8 @@ total = _pass + _fail
 print(f"  Results: {_pass} / {total} passed   ({_fail} failed)")
 print()
 if _fail == 0:
-    print("  ✓ ALL CONTRACT TESTS PASSED")
-    print("  ✓ Phase 1 exit criterion: MET")
+    print("  [OK] ALL CONTRACT TESTS PASSED")
+    print("  [OK] Phase 1 exit criterion: MET")
     print("  → Ready for Phase 2: Synthetic Tile Generator")
 else:
     print(f"  ✗ {_fail} TEST(S) FAILED — fix before proceeding to Phase 2")

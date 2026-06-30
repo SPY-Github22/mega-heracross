@@ -354,7 +354,7 @@ def print_classification_report(metrics: Dict, output_path: str) -> None:
     print(f"  Output: {output_path}")
 
     print(f"\n{SEP}")
-    print(f"  CLASSIFICATION: ✓ COMPLETE")
+    print(f"  CLASSIFICATION: [OK] COMPLETE")
     print(SEP)
 
 

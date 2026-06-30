@@ -515,8 +515,8 @@ def load_inputs(mask_path: str, meta_path: str,
                 f"Run Part A first, or set use_synthetic_fallback=True."
             )
     else:
-        print(f"  ✓ Loading Part A mask: {mask_path}")
-        print(f"  ✓ Loading Part A meta: {meta_path}")
+        print(f"  [OK] Loading Part A mask: {mask_path}")
+        print(f"  [OK] Loading Part A meta: {meta_path}")
         mask = load_mask(mask_path)
         meta = load_meta(meta_path)
 
@@ -565,9 +565,9 @@ def print_loader_report(mask: np.ndarray, meta: RoadMaskMeta,
         min_lon, min_lat, max_lon, max_lat = meta.bbox
         tl_lat, tl_lon = affine.pixel_to_latlon(0, 0)
         br_lat, br_lon = affine.pixel_to_latlon(H, W)
-        print(f"    ✓ top-left  (0,0)   → lat={tl_lat:.6f}, lon={tl_lon:.6f}")
-        print(f"    ✓ bot-right ({H},{W}) → lat={br_lat:.6f}, lon={br_lon:.6f}")
-        print(f"    ✓ All 4 corners within 1e-6° of bbox")
+        print(f"    [OK] top-left  (0,0)   → lat={tl_lat:.6f}, lon={tl_lon:.6f}")
+        print(f"    [OK] bot-right ({H},{W}) → lat={br_lat:.6f}, lon={br_lon:.6f}")
+        print(f"    [OK] All 4 corners within 1e-6° of bbox")
 
     print(f"\n  Round-trip test (pixel→latlon→pixel):")
     print(f"    centre pixel ({centre_row:.1f}, {centre_col:.1f})")
@@ -575,11 +575,11 @@ def print_loader_report(mask: np.ndarray, meta: RoadMaskMeta,
     print(f"    → pixel  ({rt_row:.6f}, {rt_col:.6f})")
     print(f"    error = {roundtrip_err_px:.2e} pixels")
     rt_ok = roundtrip_err_px < 1e-6
-    print(f"    {'✓ PASS' if rt_ok else '✗ FAIL'} (threshold: 1e-6 px)")
+    print(f"    {'[OK] PASS' if rt_ok else '✗ FAIL'} (threshold: 1e-6 px)")
 
     overall_ok = not corner_violations and rt_ok
     print(f"\n{SEP}")
-    print(f"  LOADER: {'✓ PASS' if overall_ok else '✗ FAIL'}")
+    print(f"  LOADER: {'[OK] PASS' if overall_ok else '✗ FAIL'}")
     print(SEP)
 
     return {

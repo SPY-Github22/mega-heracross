@@ -225,7 +225,7 @@ def print_benchmark_report(benchmark: Dict) -> None:
         bar = "█" * min(20, int(ms / 200)) + "░" * max(0, 20 - int(ms / 200))
         print(f"    {label:<30} {ms:>7.1f} ms  {bar}")
 
-    print(f"\n  Total: {total:.2f}s  {'✓ < 30s target' if passes else '✗ exceeds 30s target'}")
+    print(f"\n  Total: {total:.2f}s  {'[OK] < 30s target' if passes else '✗ exceeds 30s target'}")
 
     print(f"\n  Input hashes:")
     for k, v in benchmark.get("input_hashes", {}).items():
@@ -244,7 +244,7 @@ def print_benchmark_report(benchmark: Dict) -> None:
     print(f"    Source           : {m.get('source','?')} @ {m.get('resolution_m',0):.1f} m/px")
 
     print(f"\n{SEP}")
-    print(f"  BENCHMARK: {'✓ PASS' if passes else '⚠ SLOW'} | "
+    print(f"  BENCHMARK: {'[OK] PASS' if passes else '⚠ SLOW'} | "
           f"Output hash: {benchmark.get('output_hash','?')}")
     print(f"  Reproducibility: same inputs → same hash every run")
     print(SEP + "\n")

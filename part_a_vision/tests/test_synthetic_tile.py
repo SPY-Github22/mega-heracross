@@ -39,7 +39,7 @@ _gen   = None  # shared generator instance (expensive to create each time)
 def check(condition: bool, label: str, detail: str = "") -> None:
     global _pass, _fail
     if condition:
-        print(f"  ✓ PASS  [{label}]")
+        print(f"  [OK] PASS  [{label}]")
         _pass += 1
     else:
         print(f"  ✗ FAIL  [{label}]")
@@ -390,8 +390,8 @@ total = _pass + _fail
 print(f"  Results: {_pass} / {total} passed   ({_fail} failed)")
 print()
 if _fail == 0:
-    print("  ✓ ALL PHASE 2 TESTS PASSED")
-    print("  ✓ Phase 2 exit criterion: MET")
+    print("  [OK] ALL PHASE 2 TESTS PASSED")
+    print("  [OK] Phase 2 exit criterion: MET")
     print()
     print("  Phase 2 outputs:")
     print(f"    part_a_vision/outputs/road_mask.npy       ← GT mask, uint8")
