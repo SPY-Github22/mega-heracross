@@ -1,0 +1,15 @@
+{
+  "nodes": 1734,
+  "edges": 2307,
+  "top_choke_node": 11809900885,
+  "top_choke_centrality": 1.0,
+  "collapse_removals": 71,
+  "collapse_penalty": 0.516846,
+  "monte_carlo_survival_rate": 0.991386,
+  "monte_carlo_survival_ci": 0.001787,
+  "monte_carlo_delay_penalty": 0.00504,
+  "baseline_efficiency": 0.000825,
+  "summary": "Koramangala network: 1734 nodes, 2307 edges. Top choke point: node 11809900885 (centrality 1.0000). Collapse at 71-node removal. Monte Carlo survival rate: 99.1% \u00b1 0.2%. Mean delay penalty: 0.5% Cascading failure: median cascade length 10.0, mean acceleration 0.32x.",
+  "cascade_mean_length": 10.0,
+  "cascade_mean_acceleration": 0.3195218581560012
+}

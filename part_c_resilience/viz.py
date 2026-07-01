@@ -40,7 +40,7 @@ def build_folium_map(G_full, edge_betweenness, node_criticality,
     sorted_nodes = sorted(node_criticality.items(), key=lambda x: x[1], reverse=True)
     for node, crit in sorted_nodes[:top_n]:
         lat, lon = G_full.nodes[node]['lat'], G_full.nodes[node]['lon']
-        radius = 8 + 15 * (crit / max_ebc) if max_ebc > 0 else 8
+        radius = 8 + 12 * crit  # crit is already normalised to [0,1]
         folium.CircleMarker(location=[lat, lon], radius=radius,
                             color='red', fill=True, fill_color='red', fill_opacity=0.7,
                             popup=f"<b>Node {node}</b><br>Criticality: {crit:.4f}").add_to(m)

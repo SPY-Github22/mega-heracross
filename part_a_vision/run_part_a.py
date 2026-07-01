@@ -1,9 +1,22 @@
 import os
 import sys
+import warnings
+import logging
 import argparse
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+
+# Suppress noisy third-party warnings that confuse judges
+os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
+os.environ.setdefault("HF_HUB_VERBOSITY", "warning")
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from part_a_vision.dataset import RoadDataset

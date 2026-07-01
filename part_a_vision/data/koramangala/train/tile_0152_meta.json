@@ -1,0 +1,22 @@
+{
+  "tile_id": 152,
+  "seed": 1152,
+  "occlusion_type": "canopy",
+  "occlusion_fraction": 0.6005379959650302,
+  "bbox": [
+    77.6101,
+    12.9177,
+    77.6401,
+    12.9377
+  ],
+  "optical_shape": [
+    4,
+    512,
+    512
+  ],
+  "sar_shape": [
+    2,
+    512,
+    512
+  ]
+}

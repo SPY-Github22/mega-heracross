@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-30T10:24:19.721060+00:00",
+  "timestamp": "2026-07-01T14:41:10.804226+00:00",
   "system": {
     "python_version": "3.13.14",
     "platform": "Windows-11-10.0.26200-SP0",
@@ -23,41 +23,41 @@
     "sar_guided": true
   },
   "input_hashes": {
-    "road_mask_npy": "4e6b96cd944c49e7",
+    "road_mask_npy": "ae3a148605b15357",
     "meta_json": "e74e308974f5efe1"
   },
-  "output_hash": "0121e0e2e529c5ae",
+  "output_hash": "f787940726f7b6d1",
   "metrics": {
     "contract_status": "PASS",
-    "node_count": 442,
-    "edge_count": 442,
-    "lcc_pct": 0.9706,
-    "node_f1": 0.0414,
-    "edge_f1": 0.0022,
-    "total_length_km": 52.448,
+    "node_count": 421,
+    "edge_count": 424,
+    "lcc_pct": 0.9382,
+    "node_f1": 0.0334,
+    "edge_f1": 0.0,
+    "total_length_km": 56.863,
     "source": "LISS-IV",
     "resolution_m": 5.8,
-    "fragility_auc": 0.9907,
+    "fragility_auc": 0.9877,
     "node_f1_ci": [
-      0.0414,
-      0.0414
+      0.0334,
+      0.0334
     ],
     "edge_f1_ci": [
-      0.0009,
-      0.0026
+      0.0,
+      0.0
     ]
   },
   "timings_ms": {
-    "loader": 8.0,
-    "skeletonize": 120.0,
-    "graph_build": 5377.2,
-    "healing": 81.8,
-    "simplify": 128.0,
-    "weight_audit": 102.1,
-    "classify": 130.1,
-    "fragility": 109.9,
-    "bootstrap": 192.9
+    "loader": 4.8,
+    "skeletonize": 138.8,
+    "graph_build": 4189.9,
+    "healing": 126.4,
+    "simplify": 158.0,
+    "weight_audit": 218.5,
+    "classify": 394.9,
+    "fragility": 176.1,
+    "bootstrap": 307.1
   },
-  "total_runtime_s": 6.66,
+  "total_runtime_s": 6.45,
   "passes_30s_target": true
 }

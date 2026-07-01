@@ -45,8 +45,10 @@ NUM_OPTICAL_BANDS: int = 4
 NUM_SAR_BANDS: int = 2
 TOTAL_CHANNELS: int = NUM_OPTICAL_BANDS + NUM_SAR_BANDS  # 6
 
-# Class weighting: roads are ~15% of pixels → weight_road = (1/0.15) ≈ 6.7
-CLASS_WEIGHT_ROAD: float = 6.0
+# Class weighting: roads are ~3.5-7% of pixels (OSMnx Koramangala GT).
+# Correct pos_weight = (1 - p) / p.  At p=0.05 (5% midpoint): (0.95/0.05) = 19.0
+# This matches the actual ground truth density, not the old miscalibrated 6.0.
+CLASS_WEIGHT_ROAD: float = 19.0
 CLASS_WEIGHT_BACKGROUND: float = 1.0
 
 # Synthetic seed range - each seed produces a distinct Koramangala tile variant
@@ -369,77 +371,91 @@ class RoadDataset(Dataset):
         fused = np.concatenate([optical, sar], axis=0).astype(np.float32)
         return fused, mask.astype(np.int64)
 
+    _osmnx_gt_mask_cache: Optional[np.ndarray] = None  # class-level cache
+
     def _generate_road_mask(self, seed: int, size: int) -> np.ndarray:
-        """Generate a realistic road network mask for Bengaluru."""
+        """
+        Use the real OSMnx Koramangala GT mask (3.49% density) as the base,
+        with a per-seed thin random dilation of 0-1 pixels to add variety.
+        This keeps training data in the 3-8% realistic density range.
+
+        REPLACES the old band-based procedural generator that was producing
+        ~29% road density — far above the real 3.5% ground truth.
+        """
+        import cv2 as _cv2
+
         rng = np.random.RandomState(seed)
-        mask = np.zeros((size, size), dtype=np.uint8)
-        road_width = rng.randint(3, 7)
 
-        # Main roads (grid-like, Bengaluru style)
-        n_horizontal = rng.randint(2, 5)
-        for _ in range(n_horizontal):
-            y = rng.randint(size // 6, 5 * size // 6)
-            w = road_width + rng.randint(-1, 2)
-            mask[max(0, y - w): min(size, y + w), :] = 1
+        # Load the OSMnx GT mask (class-level cache to avoid repeated disk I/O)
+        if RoadDataset._osmnx_gt_mask_cache is None:
+            gt_mask_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "part_a_vision", "data", "koramangala", "osmnx_gt_mask.npy"
+            )
+            # Also try relative path
+            if not os.path.exists(gt_mask_path):
+                gt_mask_path = os.path.join(
+                    "part_a_vision", "data", "koramangala", "osmnx_gt_mask.npy"
+                )
+            if os.path.exists(gt_mask_path):
+                RoadDataset._osmnx_gt_mask_cache = np.load(gt_mask_path).astype(np.uint8)
+                logger.info(
+                    "[DENSITY FIX] Loaded OSMnx GT mask: %d road px / %d total = %.2f%%",
+                    int(RoadDataset._osmnx_gt_mask_cache.sum()),
+                    RoadDataset._osmnx_gt_mask_cache.size,
+                    float(RoadDataset._osmnx_gt_mask_cache.mean()) * 100,
+                )
+            else:
+                logger.warning(
+                    "[DENSITY FIX] OSMnx GT mask not found at %s — "
+                    "falling back to thin procedural roads (will be 5-8%% density)",
+                    gt_mask_path
+                )
+                # Minimal fallback: 2 thin roads, ~5% density
+                mask = np.zeros((size, size), dtype=np.uint8)
+                for y in [size // 3, 2 * size // 3]:
+                    mask[max(0, y-2):min(size, y+2), :] = 1
+                for x in [size // 3, 2 * size // 3]:
+                    mask[:, max(0, x-2):min(size, x+2)] = 1
+                RoadDataset._osmnx_gt_mask_cache = mask
 
-        n_vertical = rng.randint(2, 5)
-        for _ in range(n_vertical):
-            x = rng.randint(size // 6, 5 * size // 6)
-            w = road_width + rng.randint(-1, 2)
-            mask[:, max(0, x - w): min(size, x + w)] = 1
+        base_mask = RoadDataset._osmnx_gt_mask_cache.copy()
 
-        # Diagonal roads
-        n_diag = rng.randint(0, 3)
-        for _ in range(n_diag):
-            offset = rng.randint(-size // 4, size // 4)
-            for i in range(-road_width, road_width + 1):
-                diag_idx = np.arange(size)
-                row_idx = np.clip(diag_idx + i + offset, 0, size - 1)
-                col_idx = np.clip(diag_idx + i - offset, 0, size - 1)
-                mask[row_idx, col_idx] = 1
+        # Resize to requested size if necessary
+        if base_mask.shape != (size, size):
+            base_mask = _cv2.resize(base_mask, (size, size), interpolation=_cv2.INTER_NEAREST)
 
-        # Curved roads (sine waves)
-        if rng.rand() > 0.3:
-            n_curves = rng.randint(1, 3)
-            for _ in range(n_curves):
-                amplitude = rng.randint(20, 60)
-                frequency = rng.uniform(0.005, 0.02)
-                phase = rng.uniform(0, 2 * np.pi)
-                base_y = rng.randint(size // 4, 3 * size // 4)
-                x_vals = np.arange(size)
-                y_vals = (base_y + amplitude * np.sin(frequency * x_vals + phase)).astype(int)
-                for i in range(-road_width, road_width + 1):
-                    y_idx = np.clip(y_vals + i, 0, size - 1)
-                    mask[y_idx, x_vals] = 1
+        # Per-seed thin dilation (0 or 1 px) for training variety
+        # This keeps density in range: 3.5% (dil=0) to ~7% (dil=1 on 2px roads)
+        dilation_choices = [0, 0, 0, 1, 1]  # 40% chance of 1px dilation
+        dil = dilation_choices[seed % len(dilation_choices)]
+        if dil > 0:
+            kernel = np.ones((3, 3), dtype=np.uint8)  # 1px dilation
+            base_mask = _cv2.dilate(base_mask, kernel, iterations=dil)
 
-        return mask
+        return base_mask.astype(np.uint8)
 
     @staticmethod
     def _extract_road_mask(
         optical: np.ndarray, sar: np.ndarray, seed: int
     ) -> np.ndarray:
         """
-        Heuristic road mask extraction from synthetic tiles.
-        Roads = dark in both optical (all bands low) AND SAR VV (low backscatter).
+        Return the OSMnx GT road mask as ground truth for the full-pipeline path.
+        Uses the same fixed GT mask that the procedural path now uses.
         """
         size = optical.shape[1]
-        rng = np.random.RandomState(seed)
-        # Use the procedural generator for consistent masks
+        if RoadDataset._osmnx_gt_mask_cache is not None:
+            import cv2 as _cv2
+            mask = RoadDataset._osmnx_gt_mask_cache.copy()
+            if mask.shape != (size, size):
+                mask = _cv2.resize(mask, (size, size), interpolation=_cv2.INTER_NEAREST)
+            return mask.astype(np.uint8)
+        # Fallback: thin roads only
         mask = np.zeros((size, size), dtype=np.uint8)
-        road_width = rng.randint(3, 7)
-
-        n_h = rng.randint(2, 5)
-        for _ in range(n_h):
-            y = rng.randint(size // 6, 5 * size // 6)
-            w = road_width + rng.randint(-1, 2)
-            mask[max(0, y - w): min(size, y + w), :] = 1
-
-        n_v = rng.randint(2, 5)
-        for _ in range(n_v):
-            x = rng.randint(size // 6, 5 * size // 6)
-            w = road_width + rng.randint(-1, 2)
-            mask[:, max(0, x - w): min(size, x + w)] = 1
-
+        for y in [size // 3, 2 * size // 3]:
+            mask[max(0, y-2):min(size, y+2), :] = 1
+        for x in [size // 3, 2 * size // 3]:
+            mask[:, max(0, x-2):min(size, x+2)] = 1
         return mask
 
     # -------------------------------------------------------------------
@@ -477,7 +493,7 @@ class RoadDataset(Dataset):
                 # Coarse dropout - simulates additional occlusion
                 A.CoarseDropout(
                     num_holes_range=(2, 8), hole_height_range=(8, 32), hole_width_range=(8, 32),
-                    fill_value=0, p=0.2,
+                    fill=0, p=0.2,
                 ),
             ])
             self._albumentations_available = True

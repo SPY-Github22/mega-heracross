@@ -50,6 +50,12 @@ if not logger.handlers:
     ))
     logger.addHandler(_h)
 
+# ITEM 6: ensure UTF-8 stdout on Windows to avoid cp1252 UnicodeEncodeError
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except AttributeError:
+    pass
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -57,7 +63,9 @@ DEFAULT_BATCH_SIZE: int = 4
 DEFAULT_EPOCHS: int = 50
 DEFAULT_LR: float = 1e-4
 DEFAULT_WEIGHT_DECAY: float = 1e-4
-POS_WEIGHT_ROAD: float = 6.0
+# Recalibrated: OSMnx GT density = 3.49%, pos_weight = (1-0.035)/0.035 = 27.57 -> 27.0
+# Old value (6.0) was calibrated for ~15% road density - 4x wrong for this dataset.
+POS_WEIGHT_ROAD: float = 27.0
 TARGET_IOU: float = 0.30
 NUM_TILES: int = 200
 TILE_SIZE: int = 512
@@ -307,7 +315,7 @@ class Trainer:
                 val_loss, val_metrics.get("iou", 0),
                 self.optimizer.param_groups[0]["lr"],
                 elapsed,
-                "★ BEST" if is_best else "",
+                "** BEST **" if is_best else "",
             )
 
         # Save final checkpoint
@@ -318,7 +326,7 @@ class Trainer:
         logger.info("Training complete - %d epochs", self.epochs)
         logger.info("Best IoU: %.4f (epoch %d)", self.best_val_iou, self.best_epoch)
         if self.best_val_iou >= TARGET_IOU:
-            logger.info("✅ Baseline target met (IoU > %.2f)", TARGET_IOU)
+            logger.info("[TARGET MET] Baseline target met (IoU > %.2f)", TARGET_IOU)
         else:
             logger.info("[!]  Below baseline target (IoU < %.2f) - review loss / data", TARGET_IOU)  # noqa
         logger.info("Metrics saved to: %s", self.csv_path)

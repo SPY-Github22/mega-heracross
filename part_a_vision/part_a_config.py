@@ -50,10 +50,13 @@ N_EPOCHS          = 50
 EARLY_STOP_PATIENCE = 10             # stop if val IoU doesn't improve for 10 epochs
 
 # ── Class Imbalance ────────────────────────────────────────────────────────────
-# Roads are ~15-20% of pixels in urban imagery.
-# Without this weight, BCE will converge to predicting all-background.
-# weight_road = 1 / road_fraction = 1 / 0.17 ≈ 6.0
-ROAD_PIXEL_WEIGHT = 6.0
+# OSMnx Koramangala GT mask: 9,136 road pixels / 262,144 total = 3.49% (measured).
+# Correct pos_weight formula: (1 - p) / p where p = road fraction.
+#   At p = 0.035 (3.5%):  (1 - 0.035) / 0.035 = 0.965 / 0.035 = 27.57 → use 27.0
+#   At p = 0.05  (5.0%):  (1 - 0.05)  / 0.05  = 0.95  / 0.05  = 19.0  (upper bound)
+# We use 27.0 to match the actual 3.49% OSMnx GT density.
+# OLD (wrong): 6.0, which assumed ~15% road fraction — over 4x too low.
+ROAD_PIXEL_WEIGHT = 27.0
 
 # ── Loss Function Weights ──────────────────────────────────────────────────────
 # These four weights sum to 1.0.

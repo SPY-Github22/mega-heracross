@@ -1,5 +1,5 @@
 import numpy as np
-from skimage.morphology import binary_closing, disk
+from skimage.morphology import closing, disk
 from scipy.ndimage import binary_fill_holes, label
 
 def apply_morphology(binary_mask: np.ndarray, uncertainty_map: np.ndarray = None, 
@@ -24,7 +24,7 @@ def apply_morphology(binary_mask: np.ndarray, uncertainty_map: np.ndarray = None
     
     # Task 1: Binary Closing (heal 3px breaks)
     # This connects road segments that were just barely broken by a few pixels of noise
-    mask = binary_closing(mask, disk(3))
+    mask = closing(mask, disk(3))
     
     # Task 3: Smart Hole filling
     # Enclosed background pixels within a solid road are noise (small holes).

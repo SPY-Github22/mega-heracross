@@ -59,6 +59,12 @@ _REPO_ROOT = os.path.dirname(_HERE)                         # .../mega-heracross
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
+# ITEM 6: prevent cp1252 UnicodeEncodeError on Windows
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except AttributeError:
+    pass
+
 # ── Contract imports ─────────────────────────────────────────────────────────
 from shared.schema import RoadMaskMeta, GraphNode, GraphEdge, RoadGraph
 from shared.eval import (validate_graph_contract, print_contract_result,

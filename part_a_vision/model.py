@@ -26,17 +26,20 @@ class SegformerB3Custom(nn.Module):
         except ImportError:
             raise ImportError("Please install transformers: pip install transformers")
 
-        # Load the base ImageNet pretrained MiT-B3 encoder config
-        # We set num_labels to num_classes (1) for binary BCE loss compatibility.
+        import os as _os
         logger.info(f"Loading SegFormer MiT-B3 (channels={input_channels}, classes={num_classes})")
         
         # ignore_mismatched_sizes=True allows us to load the encoder weights even
         # though the default decoder head expects 150 classes (ADE20K) or 1000 (ImageNet).
-        self.model = SegformerForSemanticSegmentation.from_pretrained(
-            "nvidia/mit-b3",
-            num_labels=num_classes,
-            ignore_mismatched_sizes=True
-        )
+        # Suppress the verbose MISSING/UNEXPECTED key report — expected for our custom arch.
+        import io, contextlib
+        _suppress = io.StringIO()
+        with contextlib.redirect_stderr(_suppress), contextlib.redirect_stdout(_suppress):
+            self.model = SegformerForSemanticSegmentation.from_pretrained(
+                "nvidia/mit-b3",
+                num_labels=num_classes,
+                ignore_mismatched_sizes=True
+            )
 
         # ── Adapt input to 6 channels ──
         # Stage 1 patch embedding is a Conv2d(3, 64, kernel_size=7, stride=4, padding=3)

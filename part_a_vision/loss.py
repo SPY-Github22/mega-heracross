@@ -255,7 +255,7 @@ class CombinedLoss(nn.Module):
                  bce_weight:      float = 0.3,
                  boundary_weight: float = 0.2,
                  conn_weight:     float = 0.1,
-                 pos_weight:      float = 6.0,
+                 pos_weight:      float = 27.0,   # recalibrated: (1-0.035)/0.035 = 27.57
                  smooth:          float = 1.0,
                  skel_iter:       int = 10,
                  use_focal:       bool = True):

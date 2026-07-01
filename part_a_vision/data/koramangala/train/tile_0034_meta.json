@@ -1,0 +1,22 @@
+{
+  "tile_id": 34,
+  "seed": 1034,
+  "occlusion_type": "shadow",
+  "occlusion_fraction": 0.020660400390625,
+  "bbox": [
+    77.6101,
+    12.9177,
+    77.6401,
+    12.9377
+  ],
+  "optical_shape": [
+    4,
+    512,
+    512
+  ],
+  "sar_shape": [
+    2,
+    512,
+    512
+  ]
+}

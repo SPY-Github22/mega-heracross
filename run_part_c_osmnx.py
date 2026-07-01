@@ -1,10 +1,11 @@
-﻿"""
-Part C Standalone Runner — Real OSMnx Koramangala Data
+"""
+Part C Standalone Runner -- Real OSMnx Koramangala Data
 =======================================================
 Runs Part C independently using OSMnx to pull the real Koramangala street network.
 Does NOT depend on Parts A or B. Used for ITEM 5 of the bug fix audit.
 """
 import sys, os, json, logging
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')  # ITEM 6: prevent cp1252 crashes
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 if ROOT not in sys.path:
@@ -29,10 +30,10 @@ def main():
     osmnx_graph_path = os.path.join(config["output_dir"], "osmnx_real_koramangala_graph.json")
 
     print("=" * 65)
-    print("  PART C STANDALONE — REAL OSMnx KORAMANGALA DATA")
+    print("  PART C STANDALONE -- REAL OSMnx KORAMANGALA DATA")
     print(f"  City:  {config['city_name']}")
     print(f"  BBox:  {bbox}")
-    print(f"  Data:  REAL OpenStreetMap (via OSMnx) — NOT synthetic")
+    print(f"  Data:  REAL OpenStreetMap (via OSMnx) -- NOT synthetic")
     print("=" * 65)
 
     print("\n[OSMnx] Downloading real Koramangala street network...")
@@ -46,7 +47,7 @@ def main():
     print(f"  Graph saved to: {osmnx_graph_path}")
 
     if n_nodes < 100:
-        print(f"[WARNING] Node count {n_nodes} is under 100 — OSM data returned but bbox may be narrow.")
+        print(f"[WARNING] Node count {n_nodes} is under 100 -- OSM data returned but bbox may be narrow.")
 
     config["heatmap_path"] = os.path.join(config["output_dir"], "disaster_heatmap_real_osmnx.html")
     metrics = run_resilience_pipeline(G, config)
