@@ -114,7 +114,7 @@ def download_osm_graph(bbox: Tuple[float, float, float, float],
     print(f"  BBox: lon [{min_lon}, {max_lon}], lat [{min_lat}, {max_lat}]")
 
     G = ox.graph_from_bbox(
-        osm_bbox,
+        bbox=osm_bbox,
         network_type=network_type,
         simplify=True,       # collapse degree-2 nodes (cleaner topology)
         retain_all=False,    # keep only largest connected component
@@ -294,6 +294,9 @@ def compute_osm_stats(road_graph: RoadGraph, meta: Dict) -> Dict:
         "downloaded_at":    meta.get("downloaded_at", "unknown"),
         "network_type":     meta.get("network_type", "drive"),
         "bbox":             meta.get("bbox", list(TEST_TILE_BBOX)),
+        # source distinguishes a REAL Overpass download from the offline
+        # synthetic fallback — critical context for interpreting F1 scores
+        "osm_source_type":  meta.get("source", "OpenStreetMap via osmnx"),
     }
 
 
@@ -320,7 +323,7 @@ def print_osm_report(stats: Dict, cache_path: str,
     print(f"  Our graph must match as many of the {stats['n_nodes']} nodes")
     print(f"  and {stats['n_edges']} edges as possible to score well.")
     print(f"\n{SEP}")
-    print(f"  OSM REFERENCE: [OK] READY")
+    print(f"  OSM REFERENCE: ✓ READY")
     print(SEP)
 
 
@@ -408,7 +411,7 @@ def load_or_download_osm(cache_path: str = OSM_CACHE_PATH,
     from_cache = False
 
     if os.path.exists(cache_path) and not force_refresh:
-        print(f"  [OK] Loading OSM reference from cache: {cache_path}")
+        print(f"  ✓ Loading OSM reference from cache: {cache_path}")
         road_graph, meta = load_osm_reference(cache_path)
         from_cache = True
     else:
@@ -416,12 +419,12 @@ def load_or_download_osm(cache_path: str = OSM_CACHE_PATH,
             t0 = time.perf_counter()
             G = download_osm_graph(TEST_TILE_BBOX, network_type=network_type)
             elapsed = time.perf_counter() - t0
-            print(f"  [OK] Downloaded in {elapsed:.1f}s — "
+            print(f"  ✓ Downloaded in {elapsed:.1f}s — "
                   f"{G.number_of_nodes()} nodes, {G.number_of_edges()} edges (raw)")
             road_graph = osmnx_to_road_graph(G)
             meta = {"network_type": network_type}
             save_osm_reference(road_graph, cache_path, metadata=meta)
-            print(f"  [OK] Cached to: {cache_path}")
+            print(f"  ✓ Cached to: {cache_path}")
             _, meta = load_osm_reference(cache_path)
 
         except Exception as e:
