@@ -128,3 +128,6 @@ from real OSMnx road topology across 10 Bengaluru regions.
 Real LISS-IV and Sentinel-1 fine-tuning is the next phase —
 the pipeline accepts real GeoTIFF input without code changes.
 Parts B and C run on real OSMnx data and are production-ready.
+
+## Technical Appendix
+Full technical appendix (refer word doc): [Google Drive Folder](https://drive.google.com/drive/folders/1Ylw52BJ8yuSGmRhI5Fpa3L2KVWvIOyyE?usp=sharing)
