@@ -16,31 +16,31 @@ OUTPUT
     Printed judge report to stdout
 
 PHASE TRACKER (update as phases complete)
-    Phase 01 [OK]  Repo scaffold & contract wiring
-    Phase 02 [OK]  Contract validation in shared/eval.py
-    Phase 03 [OK]  Synthetic mask loader + geo-transform
-    Phase 04 [OK]  Zhang-Suen skeletonization
-    Phase 05 [OK]  sknw graph extraction + RoadGraph emission
-    Phase 06 [OK]  OSM ground truth download for Koramangala
-    Phase 07 [OK]  Graph topology accuracy metric (node/edge F1)
-    Phase 08 [OK]  Connected components analysis
-    Phase 09 [OK]  Judge-ready score report
-    Phase 10 [OK]  KD-Tree break detection
-    Phase 11 [OK]  Union-Find component tracking
-    Phase 12 [OK]  MST-guided gap bridging
-    Phase 13 [OK]  Spurious branch pruning
-    Phase 14 [OK]  Intersection simplification (degree-2 collapse)
-    Phase 15 [OK]  Healing quality validation + LCC gate
-    Phase 16 [OK]  Haversine weight_m audit on all edges
-    Phase 17 [OK]  osmnx fallback demo mode
-    Phase 18 [OK]  Multi-resolution mask support
-    Phase 19 [OK]  End-to-end integration test
-    Phase 20 [OK]  Bearing-aware spline healing
-    Phase 21 [OK]  SAR-guided occlusion map integration
-    Phase 22 [OK]  Road type classification
-    Phase 23 [OK]  Monte Carlo fragility score
-    Phase 24 [OK]  Bootstrap confidence intervals
-    Phase 25 [OK]  Full pipeline benchmark + reproducibility report
+    Phase 01 ✓  Repo scaffold & contract wiring
+    Phase 02 ✓  Contract validation in shared/eval.py
+    Phase 03 ✓  Synthetic mask loader + geo-transform
+    Phase 04 ✓  Zhang-Suen skeletonization
+    Phase 05 ✓  sknw graph extraction + RoadGraph emission
+    Phase 06 ✓  OSM ground truth download for Koramangala
+    Phase 07 ✓  Graph topology accuracy metric (node/edge F1)
+    Phase 08 ✓  Connected components analysis
+    Phase 09 ✓  Judge-ready score report
+    Phase 10 ✓  KD-Tree break detection
+    Phase 11 ✓  Union-Find component tracking
+    Phase 12 ✓  MST-guided gap bridging
+    Phase 13 ✓  Spurious branch pruning
+    Phase 14 ✓  Intersection simplification (degree-2 collapse)
+    Phase 15 ✓  Healing quality validation + LCC gate
+    Phase 16 ✓  Haversine weight_m audit on all edges
+    Phase 17 ✓  osmnx fallback demo mode
+    Phase 18 ✓  Multi-resolution mask support
+    Phase 19 ✓  End-to-end integration test
+    Phase 20 ✓  Bearing-aware spline healing
+    Phase 21 ✓  SAR-guided occlusion map integration
+    Phase 22 ✓  Road type classification
+    Phase 23 ✓  Monte Carlo fragility score
+    Phase 24 ✓  Bootstrap confidence intervals
+    Phase 25 ✓  Full pipeline benchmark + reproducibility report
     ...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
@@ -213,10 +213,10 @@ def print_phase01_report(
     # ── Section 1: Constants ──────────────────────────────────
     print("\n[1/4] LOCKED CONSTANTS")
     if not const_violations:
-        print(f"  [OK]  TARGET_CRS          = {TARGET_CRS}")
-        print(f"  [OK]  COLLAPSE_THRESHOLD  = {COLLAPSE_THRESHOLD}")
-        print(f"  [OK]  TEST_TILE_BBOX      = {TEST_TILE_BBOX}")
-        print(f"  [OK]  GRAPH_SOURCE        = '{GRAPH_SOURCE}'")
+        print(f"  ✓  TARGET_CRS          = {TARGET_CRS}")
+        print(f"  ✓  COLLAPSE_THRESHOLD  = {COLLAPSE_THRESHOLD}")
+        print(f"  ✓  TEST_TILE_BBOX      = {TEST_TILE_BBOX}")
+        print(f"  ✓  GRAPH_SOURCE        = '{GRAPH_SOURCE}'")
     else:
         for v in const_violations:
             print(f"  ✗  {v}")
@@ -224,10 +224,10 @@ def print_phase01_report(
     # ── Section 2: Schema ─────────────────────────────────────
     print("\n[2/4] CONTRACT SCHEMA (shared/schema.py)")
     if not schema_violations:
-        print("  [OK]  RoadMaskMeta  — fields: crs, bbox, resolution_m, source")
-        print("  [OK]  GraphNode     — fields: id, lat, lon")
-        print("  [OK]  GraphEdge     — fields: source, target, weight_m, geometry")
-        print("  [OK]  RoadGraph     — fields: nodes, edges, crs")
+        print("  ✓  RoadMaskMeta  — fields: crs, bbox, resolution_m, source")
+        print("  ✓  GraphNode     — fields: id, lat, lon")
+        print("  ✓  GraphEdge     — fields: source, target, weight_m, geometry")
+        print("  ✓  RoadGraph     — fields: nodes, edges, crs")
     else:
         for v in schema_violations:
             print(f"  ✗  {v}")
@@ -235,7 +235,7 @@ def print_phase01_report(
     # ── Section 3: Paths ──────────────────────────────────────
     print("\n[3/4] CONTRACT PATHS")
     for label, (abs_path, exists) in path_results.items():
-        status = "[OK] EXISTS" if exists else "○ PENDING"
+        status = "✓ EXISTS" if exists else "○ PENDING"
         # Show relative path for readability
         try:
             rel = os.path.relpath(abs_path, _REPO_ROOT)
@@ -246,13 +246,13 @@ def print_phase01_report(
 
     # ── Section 4: Output dir ─────────────────────────────────
     print("\n[4/4] OUTPUT DIRECTORY")
-    print(f"  [OK]  {output_dir}")
+    print(f"  ✓  {output_dir}")
 
     # ── Overall result ────────────────────────────────────────
     all_violations = const_violations + schema_violations
     print(f"\n{SEP}")
     if not all_violations:
-        print(f"  RESULT: [OK] SCAFFOLD VALID  ({elapsed_ms:.1f} ms)")
+        print(f"  RESULT: ✓ SCAFFOLD VALID  ({elapsed_ms:.1f} ms)")
         print(f"  CRS lock confirmed: {TARGET_CRS}")
         print(f"  Test tile: Koramangala, Bengaluru")
         print(f"  Ready for Phase 02 → contract validation in shared/eval.py")
@@ -456,6 +456,9 @@ def main():
         "osm_nodes":       osm_stats["n_nodes"],
         "osm_edges":       osm_stats["n_edges"],
         "osm_length_km":   osm_stats["total_length_km"],
+        "osm_source_type": osm_stats.get("osm_source_type", "unknown"),
+        "scale_mismatch":  f1_result.get("scale_mismatch", False),
+        "scale_ratio":     f1_result.get("scale_ratio", 0),
         # Topology F1 (Phase 07)
         "node_f1":         f1_result["node_f1"],
         "edge_f1":         f1_result["edge_f1"],
@@ -484,11 +487,14 @@ def main():
 
     benchmark_metrics = dict(judge_metrics)
     benchmark_metrics.update({
-        "fragility_auc":  frag_result.get("fragility_auc", 0),
-        "node_f1_ci":     list(boot_result.get("node_f1_ci", (0, 0))),
-        "edge_f1_ci":     list(boot_result.get("edge_f1_ci", (0, 0))),
-        "timings_ms":     timings_ms,
+        "fragility_auc":   frag_result.get("fragility_auc", 0),
+        "node_f1_ci":      list(boot_result.get("node_f1_ci", (0, 0))),
+        "edge_f1_ci":      list(boot_result.get("edge_f1_ci", (0, 0))),
+        "timings_ms":      timings_ms,
         "total_runtime_s": round(total_runtime_s, 2),
+        "osm_source_type": osm_stats.get("osm_source_type", "unknown"),
+        "scale_mismatch":  f1_result.get("scale_mismatch", False),
+        "scale_ratio":     f1_result.get("scale_ratio", 0),
     })
 
     mask_path_for_hash = os.path.join(_REPO_ROOT, ROAD_MASK_PATH)
