@@ -167,6 +167,11 @@ def run_benchmark(
         "fragility_auc":    all_metrics.get("fragility_auc", 0),
         "node_f1_ci":       all_metrics.get("node_f1_ci", [0, 0]),
         "edge_f1_ci":       all_metrics.get("edge_f1_ci", [0, 0]),
+        # Context flags — explain low F1 scores caused by comparing
+        # synthetic test data against a real (denser) OSM ground truth
+        "osm_source_type":  all_metrics.get("osm_source_type", "unknown"),
+        "scale_mismatch":   all_metrics.get("scale_mismatch", False),
+        "scale_ratio":      all_metrics.get("scale_ratio", 0),
     }
 
     benchmark = {
@@ -225,7 +230,7 @@ def print_benchmark_report(benchmark: Dict) -> None:
         bar = "█" * min(20, int(ms / 200)) + "░" * max(0, 20 - int(ms / 200))
         print(f"    {label:<30} {ms:>7.1f} ms  {bar}")
 
-    print(f"\n  Total: {total:.2f}s  {'[OK] < 30s target' if passes else '✗ exceeds 30s target'}")
+    print(f"\n  Total: {total:.2f}s  {'✓ < 30s target' if passes else '✗ exceeds 30s target'}")
 
     print(f"\n  Input hashes:")
     for k, v in benchmark.get("input_hashes", {}).items():
@@ -240,11 +245,15 @@ def print_benchmark_report(benchmark: Dict) -> None:
     print(f"    LCC%             : {m.get('lcc_pct',0):.1%}")
     print(f"    node_F1          : {m.get('node_f1',0):.4f}  CI {m.get('node_f1_ci',[0,0])}")
     print(f"    edge_F1          : {m.get('edge_f1',0):.4f}  CI {m.get('edge_f1_ci',[0,0])}")
+    if m.get("scale_mismatch"):
+        print(f"    ⚠ F1 scored against REAL OSM data ({m.get('osm_source_type','?')}) "
+              f"while Part B ran on synthetic mask ({m.get('scale_ratio',0):.1f}× size gap)")
+        print(f"      → Low F1 is expected until Part A delivers road_mask.npy")
     print(f"    Fragility AUC    : {m.get('fragility_auc',0):.4f}")
     print(f"    Source           : {m.get('source','?')} @ {m.get('resolution_m',0):.1f} m/px")
 
     print(f"\n{SEP}")
-    print(f"  BENCHMARK: {'[OK] PASS' if passes else '⚠ SLOW'} | "
+    print(f"  BENCHMARK: {'✓ PASS' if passes else '⚠ SLOW'} | "
           f"Output hash: {benchmark.get('output_hash','?')}")
     print(f"  Reproducibility: same inputs → same hash every run")
     print(SEP + "\n")
