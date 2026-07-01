@@ -21,7 +21,7 @@ from resilience import (
 )
 from viz import build_folium_map
 
-st.set_page_config(page_title="NeuroGrid – Resilience Dashboard", layout="wide")
+st.set_page_config(page_title="GaiaLink – Resilience Dashboard", layout="wide")
 
 # ── Custom CSS ─────────────────────────────────────────────────
 st.markdown("""
@@ -122,7 +122,7 @@ metrics = st.session_state.metrics
 sorted_crit_nodes = st.session_state.sorted_crit_nodes
 
 # ── Hero Section ───────────────────────────────────────────────
-st.title("🛰️ NeuroGrid — Route Resilience for Urban Mobility")
+st.title("🛰️ GaiaLink — Route Resilience for Urban Mobility")
 st.markdown(f"<h3 style='color:#00bcd4;'>{config['city_name']} · ISRO Bharatiya Antariksh Hackathon 2026</h3>", unsafe_allow_html=True)
 st.markdown("""
 <div style='background:#111927; padding:20px; border-radius:12px; margin-bottom:20px;'>
@@ -279,7 +279,7 @@ with tab5:
         h1,h2,h3{{color:#00bcd4}} table{{border-collapse:collapse;width:100%}} th,td{{border:1px solid #555;padding:8px}} th{{background:#222}}
         .box{{background:#111927;padding:15px;border-radius:8px;margin:10px 0}}</style></head>
         <body>
-        <h1>NeuroGrid Resilience Report</h1>
+        <h1>GaiaLink Resilience Report</h1>
         <p>{config['city_name']} | {metrics['summary']}</p>
         <div class="box"><h2>Key Metrics</h2>
         <table><tr><th>Metric</th><th>Value</th></tr>

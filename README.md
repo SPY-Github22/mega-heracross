@@ -1,4 +1,4 @@
-# Mega-Heracross — NeuroGrid Pipeline
+# Mega-Heracross — GaiaLink Pipeline
 ### ISRO Bharatiya Antariksh Hackathon 2026 | PS4: Route Resilience
 
 End-to-end pipeline: occlusion-corrupted satellite pixels →
@@ -70,7 +70,7 @@ Road Graph. 2,210 predicted nodes vs 2,708 OSM reference nodes.
 ![OSM vs Predicted Graph](docs/images/ppt_osm_vs_predicted_graph.png)
 
 Left: real OSM Koramangala (2,708 nodes).
-Right: NeuroGrid pipeline output (2,210 nodes).
+Right: GaiaLink pipeline output (2,210 nodes).
 Node F1: 0.44 · Edge Precision: 0.81
 
 ---

@@ -1,4 +1,4 @@
-# NeuroGrid – Part C: Resilience & Visualization Engine
+# GaiaLink – Part C: Resilience & Visualization Engine
 
 ISRO Bharatiya Antariksh Hackathon 2026, Problem Statement 4: Route Resilience.
 
